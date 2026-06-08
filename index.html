@@ -382,26 +382,62 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 <div id="toast"></div>
 
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script>
+// Safe Firebase loader — app works even if Firebase fails to load
+window.firebaseReady = false;
+window.db = null;
+
+function loadFirebase() {
+  return new Promise((resolve) => {
+    const s1 = document.createElement('script');
+    s1.src = 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js';
+    s1.onload = () => {
+      const s2 = document.createElement('script');
+      s2.src = 'https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js';
+      s2.onload = () => resolve(true);
+      s2.onerror = () => resolve(false);
+      document.head.appendChild(s2);
+    };
+    s1.onerror = () => resolve(false);
+    document.head.appendChild(s1);
+  });
+}
+</script>
 <script>
 /* ══════════════════════════════════════
    FIREBASE
 ══════════════════════════════════════ */
-firebase.initializeApp({
-  apiKey:"AIzaSyAYipIeiJ7zmSOm2de8Zw5-Tx1eEvYE_5w",
-  authDomain:"prayer-competition-2bac3.firebaseapp.com",
-  databaseURL:"https://prayer-competition-2bac3-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId:"prayer-competition-2bac3",
-  storageBucket:"prayer-competition-2bac3.firebasestorage.app",
-  messagingSenderId:"113122235783",
-  appId:"1:113122235783:web:3cc02300ac28cbcbef6f22"
-});
-const db=firebase.database();
-db.ref('.info/connected').on('value',snap=>{
-  const el=document.getElementById('sync-dot');if(el)el.className='sync-dot '+(snap.val()?'ok':'err');
-  const st=document.getElementById('sync-status');if(st)st.textContent=snap.val()?'✓ Connected to database':'Working offline — data saves locally';
-});
+// Initialize Firebase safely
+(async function(){
+  const ok = await loadFirebase();
+  if(ok && typeof firebase !== 'undefined'){
+    try{
+      firebase.initializeApp({
+        apiKey:"AIzaSyAYipIeiJ7zmSOm2de8Zw5-Tx1eEvYE_5w",
+        authDomain:"prayer-competition-2bac3.firebaseapp.com",
+        databaseURL:"https://prayer-competition-2bac3-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId:"prayer-competition-2bac3",
+        storageBucket:"prayer-competition-2bac3.firebasestorage.app",
+        messagingSenderId:"113122235783",
+        appId:"1:113122235783:web:3cc02300ac28cbcbef6f22"
+      });
+      window.db = firebase.database();
+      window.firebaseReady = true;
+      window.window.db.ref('.info/connected').on('value',snap=>{
+        const el=document.getElementById('sync-dot');if(el)el.className='sync-dot '+(snap.val()?'ok':'err');
+        const st=document.getElementById('sync-status');if(st)st.textContent=snap.val()?'✓ Connected':'⚠ Offline';
+        // also load passwords from Firebase when connected
+        if(snap.val()) window.window.db.ref('passwords').once('value',s=>{if(s.val())passwords={...DEFAULT_PASSWORDS,...s.val()};});
+      });
+    }catch(e){
+      console.warn('Firebase init failed:', e);
+      const st=document.getElementById('sync-status');if(st)st.textContent='Offline mode — data saved locally';
+    }
+  } else {
+    const st=document.getElementById('sync-status');if(st)st.textContent='Offline mode — data saved locally';
+    const sd=document.getElementById('sync-dot');if(sd)sd.className='sync-dot err';
+  }
+})();
 
 /* ══════════════════════════════════════
    CONSTANTS
@@ -495,15 +531,15 @@ let tickInterval=null, currentDayKey=null, dbRef=null, quranRef=null;
 ══════════════════════════════════════ */
 function fbListen(){
   if(dbRef){dbRef.off();dbRef=null;}
-  dbRef=db.ref('pdata');
+  dbRef=window.db.ref('pdata');
   dbRef.on('value',snap=>{pdata=Object.assign(pdata,{...snap.val()})||pdata;refreshCurrentTab();});
 }
 function fbListenBehav(){
-  db.ref('behavior').on('value',snap=>{if(!pdata._behav)pdata._behav={};pdata._behav=snap.val()||{};refreshTab();});
+  if(window.db)window.window.db.ref('behavior').on('value',snap=>{if(!pdata._behav)pdata._behav={};pdata._behav=snap.val()||{};refreshTab();});
 }
 function fbListenQuran(){
   if(quranRef){quranRef.off();quranRef=null;}
-  quranRef=db.ref('quran');
+  quranRef=window.db.ref('quran');
   quranRef.on('value',snap=>{
     if(!pdata._quran)pdata._quran={};
     pdata._quran=snap.val()||{};
@@ -515,7 +551,14 @@ function refreshCurrentTab(){
   if(active)active.click();
 }
 function refreshTab(){const a=document.querySelector('.nav-tab.active');if(a)a.click();}
-function fbSet(uid,dk,entry){db.ref(`pdata/${uid}/${dk}`).set(entry).then(()=>showToast('✓ Saved')).catch(()=>showToast('⚠ Save failed'));}
+
+function safeDb(path){ return window.db ? window.window.db.ref(path) : null; }
+function fbSet(uid,dk,entry){
+  const ref=safeDb('pdata/'+uid+'/'+dk);
+  if(ref) ref.set(entry).then(()=>showToast('✓ Saved')).catch(()=>showToast('⚠ Save failed'));
+  else { localStorage.setItem('pdata_'+uid+'_'+dk, JSON.stringify(entry)); showToast('✓ Saved locally'); }
+}
+function fbSet(uid,dk,entry){window.db.ref(`pdata/${uid}/${dk}`).set(entry).then(()=>showToast('✓ Saved')).catch(()=>showToast('⚠ Save failed'));}
 function getEntry(uid,dk){
   if(!pdata[uid])pdata[uid]={};
   if(!pdata[uid][dk])pdata[uid][dk]={prayers:{},exempt:false};
@@ -596,7 +639,7 @@ function msLeft(dk,p){const t=(timesCache[dk]||{})[p];if(!t)return 0;return Math
 const DEFAULT_PASSWORDS={yassin:'yassin123',marwan:'marwan123',aya:'aya123',habiba:'habiba123',reham:'reham123',marwa:'marwa123',admin:'admin2024'};
 let passwords={...DEFAULT_PASSWORDS};
 // Sync from Firebase in background — overrides defaults if user changed password
-db.ref('passwords').on('value',snap=>{if(snap.val())passwords={...DEFAULT_PASSWORDS,...snap.val()};});
+if(window.db){window.window.db.ref('passwords').on('value',snap=>{if(snap.val())passwords={...DEFAULT_PASSWORDS,...snap.val()};});}
 function loadPasswords(){} // already loaded above
 
 function openModal(){
@@ -615,7 +658,7 @@ function doChangePassword(){
   if(oldPw!==passwords[currentUser]){err.textContent='Current password is incorrect.';return;}
   if(newPw.length<6){err.textContent='Min 6 characters.';return;}
   if(newPw!==con){err.textContent='Passwords do not match.';return;}
-  db.ref('passwords/'+currentUser).set(newPw)
+  if(window.db)window.window.db.ref('passwords/'+currentUser).set(newPw)
     .then(()=>{ok.textContent='Password updated!';setTimeout(closeModal,1500);})
     .catch(()=>{err.textContent='Save failed.';});
 }
@@ -898,15 +941,15 @@ function buildQuran(){
 
 function markJuz(j){
   const uid=currentUser;
-  db.ref(`quran/${uid}/juz/${j}`).set(true).then(()=>{showToast(`✅ Juz ${j} marked complete!`);triggerConfetti();}).catch(()=>showToast('⚠ Save failed'));
+  window.db.ref(`quran/${uid}/juz/${j}`).set(true).then(()=>{showToast(`✅ Juz ${j} marked complete!`);triggerConfetti();}).catch(()=>showToast('⚠ Save failed'));
 }
 function unmarkJuz(j){
   const uid=currentUser;
-  db.ref(`quran/${uid}/juz/${j}`).set(false).then(()=>showToast(`↩ Juz ${j} unmarked`)).catch(()=>showToast('⚠ Save failed'));
+  window.db.ref(`quran/${uid}/juz/${j}`).set(false).then(()=>showToast(`↩ Juz ${j} unmarked`)).catch(()=>showToast('⚠ Save failed'));
 }
 function saveQuranToday(){
   const val=parseInt(document.getElementById('ayat-inp').value)||0;
-  db.ref(`quran/${currentUser}/today`).set(val).then(()=>{showToast('📖 Reading saved!');buildQuran();}).catch(()=>showToast('⚠ Save failed'));
+  if(window.db)window.window.db.ref(`quran/${currentUser}/today`).set(val).then(()=>{showToast('📖 Reading saved!');buildQuran();}).catch(()=>showToast('⚠ Save failed'));
 }
 function quickAyat(n){
   document.getElementById('ayat-inp').value=n;saveQuranToday();
@@ -1030,7 +1073,7 @@ window.setBehavScore=function(uid,dk,catId,val){
 function saveBehavior(uid,dk){
   const note=document.getElementById('behav-note')?.value||'';
   const scores=(pdata._behav?.[uid]?.[dk]?.scores)||{};
-  db.ref('behavior/'+uid+'/'+dk).set({scores,note})
+  if(window.db)window.window.db.ref('behavior/'+uid+'/'+dk).set({scores,note})
     .then(()=>showToast('&#11088; Behavior saved!'))
     .catch(()=>showToast('&#9888; Failed'));
 }
