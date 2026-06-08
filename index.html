@@ -400,7 +400,7 @@ firebase.initializeApp({
 const db=firebase.database();
 db.ref('.info/connected').on('value',snap=>{
   const el=document.getElementById('sync-dot');if(el)el.className='sync-dot '+(snap.val()?'ok':'err');
-  const st=document.getElementById('sync-status');if(st)st.textContent=snap.val()?'✓ Connected':'⚠ Offline';
+  const st=document.getElementById('sync-status');if(st)st.textContent=snap.val()?'✓ Connected to database':'Working offline — data saves locally';
 });
 
 /* ══════════════════════════════════════
@@ -623,7 +623,11 @@ function doChangePassword(){
 function doLogin(){
   const uid=document.getElementById('sel-user').value,pass=document.getElementById('inp-pass').value,err=document.getElementById('login-err');
   if(!uid){err.textContent='Please select a participant.';return;}
-  const u=USERS[uid];if(!u||pass!==passwords[uid]){err.textContent='Incorrect password.';return;}
+  const u=USERS[uid];
+  if(!u){err.textContent='Unknown account.';return;}
+  // Check against live passwords first, fallback to defaults
+  const validPass=passwords[uid]||DEFAULT_PASSWORDS[uid];
+  if(pass!==validPass){err.textContent='Incorrect password.';return;}
   err.textContent='';currentUser=uid;enterApp();
 }
 function doLogout(){
