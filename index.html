@@ -348,8 +348,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
           <option value="habiba">Habiba</option>
         </optgroup>
         <optgroup label="Parents">
-          <option value="reham">Reham — mother of Yassin &amp; Marwan</option>
-          <option value="marwa">Marwa — mother of Aya &amp; Habiba</option>
+          <option value="reham">Reham</option>
+          <option value="marwa">Marwa</option>
         </optgroup>
         <optgroup label="Admin">
           <option value="admin">Admin (full access)</option>
@@ -843,16 +843,11 @@ function buildQuran(){
   // Juz grid — show all 30, highlight target range
   let juzCells='';
   for(let j=1;j<=30;j++){
-    const inRange=j>=profile.juzFrom&&j<=profile.juzTo;
     const done=(qdata.juz||{})[j]===true;
-    const isCurrent=inRange&&!done&&(j===profile.juzFrom||(qdata.juz||{})[j-1]===true);
-    let cls='juz-cell';
+    let cls='juz-cell clickable';
     if(done)cls+=' done';
-    else if(isCurrent)cls+=' current';
-    else if(!inRange)cls+=' locked';
-    const onclick=inRange&&!done?`onclick="markJuz(${j})"`:inRange&&done?`onclick="unmarkJuz(${j})"`:'';
-    cls+=inRange?' clickable':'';
-    juzCells+=`<div class="${cls}" title="Juz ${j}${done?' ✓':isCurrent?' ← current':''}" ${onclick}>${j}</div>`;
+    const onclick=done?`onclick="unmarkJuz(${j})"`:`onclick="markJuz(${j})"`;
+    juzCells+=`<div class="${cls}" title="Juz ${j}${done?' ✓':''}" ${onclick}>${j}</div>`;
   }
 
   document.getElementById('tab-quran').innerHTML=`
@@ -884,8 +879,7 @@ function buildQuran(){
     <div class="quran-stats-row">
       <div class="qstat"><div class="qstat-val">${juzDone}</div><div class="qstat-lbl">Juz done</div></div>
       <div class="qstat"><div class="qstat-val">${profile.totalJuz-juzDone}</div><div class="qstat-lbl">Remaining</div></div>
-      <div class="qstat"><div class="qstat-val">${egp}</div><div class="qstat-lbl">EGP earned</div></div>
-      <div class="qstat"><div class="qstat-val">🎁</div><div class="qstat-lbl">Finish to reveal</div></div>
+      <div class="qstat"><div class="qstat-val">🎁</div><div class="qstat-lbl">Finish for surprise</div></div>
     </div>
   </div>
 
@@ -895,13 +889,8 @@ function buildQuran(){
       <span>${profile.surahs}</span>
     </div>
     <div class="juz-grid">${juzCells}</div>
-    <div class="juz-legend">
-      <span><div class="dot" style="background:var(--green);border-radius:2px"></div> Completed</span>
-      <span><div class="dot" style="background:var(--gold-m);border-radius:2px"></div> Current</span>
-      <span><div class="dot" style="background:var(--s3);border-radius:2px"></div> Your target</span>
-      <span><div class="dot" style="background:var(--s3);border-radius:2px;opacity:.3"></div> Outside target</span>
-    </div>
-    <div style="margin-top:.75rem;font-size:12px;color:var(--mu)">Tap a juz in your range to mark it complete. Tap again to unmark.</div>
+    <div class="juz-legend"><span><div class="dot" style="background:var(--green);border-radius:2px"></div>Completed</span><span><div class="dot" style="background:var(--s3);border-radius:2px"></div>Not yet</span></div>
+    <div style="margin-top:.75rem;font-size:12px;color:var(--mu)">Tap any juz to mark it complete. Tap again to unmark.</div>
   </div>
 
   <div class="today-input-card">
@@ -920,27 +909,7 @@ function buildQuran(){
     </div>
   </div>
 
-  <div class="today-input-card" style="background:linear-gradient(135deg,var(--gold-l),var(--surface));border-color:var(--gold-m)">
-    <h4>💰 Quran EGP Calculator</h4>
-    <div style="display:flex;gap:8px;margin-bottom:.75rem">
-      <div style="flex:1;text-align:center;padding:12px;background:rgba(255,255,255,.7);border-radius:var(--rm)">
-        <div style="font-size:11px;color:var(--mu)">Current</div>
-        <div style="font-size:22px;font-weight:800;color:var(--gold)">${egp} EGP</div>
-      </div>
-      <div style="flex:1;text-align:center;padding:12px;background:rgba(255,255,255,.7);border-radius:var(--rm)">
-        <div style="font-size:11px;color:var(--mu)">Minimum (50%)</div>
-        <div style="font-size:22px;font-weight:800;color:var(--silver)">${profile.minEGP} EGP</div>
-      </div>
-      <div style="flex:1;text-align:center;padding:12px;background:rgba(255,255,255,.7);border-radius:var(--rm)">
-        <div style="font-size:11px;color:var(--mu)">If you finish 🎁</div>
-        <div style="font-size:22px;font-weight:800;color:var(--green)">???</div>
-      </div>
-    </div>
-    <div style="height:10px;background:var(--s3);border-radius:99px;overflow:hidden;margin-bottom:4px">
-      <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,var(--gold-m),var(--gold));border-radius:99px;transition:width 1s"></div>
-    </div>
-    <div style="font-size:11px;color:var(--mu);display:flex;justify-content:space-between"><span>0 EGP</span><span>Keep going — surprise awaits! 🎁</span></div>
-  </div>`;
+  `;
 }
 
 function markJuz(j){
