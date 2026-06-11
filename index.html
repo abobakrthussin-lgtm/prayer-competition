@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta http-equiv="Content-Security-Policy" content="default-src * blob: data: 'unsafe-inline' 'unsafe-eval'">
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Prayer Competition – Cairo 2026</title>
 <style>
@@ -57,8 +56,47 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .sync-dot{width:8px;height:8px;border-radius:50%;background:var(--mu);transition:background .3s;}
 .sync-dot.ok{background:#639922;}.sync-dot.err{background:var(--red);}.sync-dot.loading{background:var(--gold);animation:pulse 1s infinite;}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:500;display:none;align-items:center;justify-content:center;padding:1rem;}
+.modal-overlay.open{display:flex;}
+.modal-box{background:var(--surface);border-radius:var(--r);padding:1.5rem;width:100%;max-width:360px;border:1px solid var(--bd);box-shadow:0 8px 32px rgba(0,0,0,.2);}
+.modal-box h3{font-size:16px;font-weight:700;margin-bottom:1rem;}
+.modal-close{float:right;background:none;border:none;font-size:22px;cursor:pointer;color:var(--mu);margin-top:-6px;}
+.login-ok{font-size:13px;color:var(--green);margin-top:.4rem;text-align:center;}
 .icon-btn{padding:6px 10px;font-size:13px;background:transparent;border:1px solid var(--bd2);border-radius:var(--rm);cursor:pointer;color:var(--mu);}
 .icon-btn:hover{background:var(--s2);}
+
+
+/* ── BEHAVIOR ── */
+.behav-hero{border-radius:var(--r);padding:1.25rem;margin-bottom:.75rem;background:linear-gradient(135deg,#1a0830,#3a1060);border:1px solid rgba(255,255,255,.1);box-shadow:var(--shadow);}
+.bh-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem;}
+.bh-title{color:rgba(255,255,255,.6);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;}
+.bh-name{color:#fff;font-size:18px;font-weight:800;margin-top:2px;}
+.bh-score{text-align:right;}
+.bh-big{font-size:40px;font-weight:900;color:#E8D5FF;line-height:1;}
+.bh-sub{font-size:11px;color:rgba(255,255,255,.5);margin-top:2px;}
+.bh-stars{display:flex;gap:4px;justify-content:center;margin:.5rem 0;}
+.rating-legend{display:flex;gap:8px;flex-wrap:wrap;padding:8px 12px;background:var(--s2);border-radius:var(--rm);margin-bottom:.75rem;font-size:11px;color:var(--mu);}
+.cat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:.75rem;}
+.cat-card{background:var(--surface);border:1px solid var(--bd);border-radius:var(--rm);padding:12px;box-shadow:var(--shadow);}
+.cat-hdr{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.cat-dots{display:flex;gap:4px;justify-content:center;margin-bottom:4px;}
+.cat-dot{width:24px;height:24px;border-radius:50%;border:2px solid var(--bd2);cursor:pointer;transition:all .15s;flex-shrink:0;}
+.cat-dot.filled-1{background:#E24B4A;border-color:#E24B4A;}
+.cat-dot.filled-2{background:#EF9F27;border-color:#EF9F27;}
+.cat-dot.filled-3{background:#5DCAA5;border-color:#5DCAA5;}
+.cat-dot.filled-4{background:#639922;border-color:#639922;}
+.cat-dot.filled-5{background:#3B6D11;border-color:#3B6D11;}
+.cat-desc-text{font-size:10px;text-align:center;min-height:14px;margin-top:2px;}
+.bh-note{width:100%;padding:10px;font-size:13px;border:1px solid var(--bd2);border-radius:var(--rm);background:var(--s2);color:var(--tx);resize:vertical;min-height:70px;font-family:inherit;outline:none;}
+.bh-note:focus{border-color:var(--purple);}
+.egp-badge{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:99px;background:var(--gold-l);border:1px solid var(--gold-m);font-size:13px;font-weight:700;color:var(--gold);}
+.hist-item{padding:8px 0;border-bottom:1px solid var(--bd);}
+.hist-item:last-child{border-bottom:none;}
+.hist-row2{display:flex;align-items:center;gap:10px;font-size:13px;}
+.hist-date2{width:72px;color:var(--mu);font-size:11px;flex-shrink:0;}
+.hist-note2{font-size:11px;color:var(--mu);font-style:italic;margin-top:3px;}
+
 .logout-btn{padding:6px 12px;font-size:12px;background:transparent;border:1px solid var(--bd2);border-radius:var(--rm);cursor:pointer;color:var(--mu);}
 .logout-btn:hover{background:var(--s2);}
 .saved-ind{font-size:12px;color:var(--green);display:none;align-items:center;gap:4px;}
@@ -286,15 +324,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 #toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%) translateY(10px);background:var(--tx);color:var(--bg);padding:10px 20px;border-radius:99px;font-size:13px;font-weight:500;opacity:0;transition:opacity .3s,transform .3s;pointer-events:none;z-index:100;white-space:nowrap;}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
-
-/* MODAL */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:500;display:none;align-items:center;justify-content:center;padding:1rem;}
-.modal-overlay.open{display:flex;}
-.modal-box{background:var(--surface);border-radius:var(--r);padding:1.5rem;width:100%;max-width:360px;border:1px solid var(--bd);box-shadow:0 8px 32px rgba(0,0,0,.2);}
-.modal-box h3{font-size:16px;font-weight:700;margin-bottom:1rem;}
-.modal-close{float:right;background:none;border:none;font-size:22px;cursor:pointer;color:var(--mu);margin-top:-6px;line-height:1;}
-.login-ok{font-size:13px;color:var(--green);margin-top:.4rem;text-align:center;min-height:18px;}
-
 .confetti-piece{position:fixed;width:10px;height:10px;border-radius:2px;animation:confettiFall 2s ease-in forwards;pointer-events:none;z-index:999;}
 @keyframes confettiFall{0%{transform:translateY(-20px) rotate(0deg);opacity:1;}100%{transform:translateY(100vh) rotate(720deg);opacity:0;}}
 </style>
@@ -336,6 +365,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
 </div>
 
+
+<div id="pw-modal" class="modal-overlay">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal()">&#215;</button>
+    <h3>&#128273; Change Password</h3>
+    <div class="field"><label>Current password</label><input type="password" id="pw-old" placeholder="Current password"/></div>
+    <div class="field"><label>New password (min 6)</label><input type="password" id="pw-new" placeholder="New password"/></div>
+    <div class="field"><label>Confirm</label><input type="password" id="pw-confirm" placeholder="Repeat"/></div>
+    <button class="btn-gold" onclick="doChangePassword()" style="margin-top:.5rem">Update Password</button>
+    <div id="pw-err" class="login-err"></div>
+    <div id="pw-ok" style="font-size:13px;color:var(--green);text-align:center;min-height:18px;margin-top:.4rem"></div>
+  </div>
+</div>
 <div id="s-main" class="screen">
 <div class="container">
   <div class="topbar">
@@ -344,6 +386,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div><div class="av-name" id="av-name"></div><div class="av-sub" id="av-sub"></div></div>
     </div>
     <div class="topbar-r">
+      <button class="icon-btn" onclick="openModal()">&#128273;</button>
       <span class="saved-ind" id="saved-ind">✓ Saved</span>
       <div class="sync-dot loading" id="sync-dot"></div>
       <button class="logout-btn" onclick="doLogout()">Sign out</button>
@@ -368,7 +411,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <button class="nav-tab" id="nt-rewards" onclick="showTab('rewards',this)">💰 Rewards</button>
     <button class="nav-tab" id="nt-stats"   onclick="showTab('stats',this)">📊 Stats</button>
     <button class="nav-tab" id="nt-board"   onclick="showTab('board',this)">🥇 Leaderboard</button>
-    <button class="nav-tab" id="nt-behavior" style="display:none" onclick="showTab('behavior',this)">&#11088; Behavior</button>
+    <button class="nav-tab" id="nt-behavior" style="display:none" onclick="showTab('behavior',this)">⭐ Behavior</button>
     <button class="nav-tab" id="nt-admin" style="display:none" onclick="showTab('admin',this)">Admin</button>
   </div>
   <div id="tab-tracker"></div>
@@ -382,62 +425,26 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 <div id="toast"></div>
 
-<script>
-// Safe Firebase loader — app works even if Firebase fails to load
-window.firebaseReady = false;
-window.db = null;
-
-function loadFirebase() {
-  return new Promise((resolve) => {
-    const s1 = document.createElement('script');
-    s1.src = 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js';
-    s1.onload = () => {
-      const s2 = document.createElement('script');
-      s2.src = 'https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js';
-      s2.onload = () => resolve(true);
-      s2.onerror = () => resolve(false);
-      document.head.appendChild(s2);
-    };
-    s1.onerror = () => resolve(false);
-    document.head.appendChild(s1);
-  });
-}
-</script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 /* ══════════════════════════════════════
    FIREBASE
 ══════════════════════════════════════ */
-// Initialize Firebase safely
-(async function(){
-  const ok = await loadFirebase();
-  if(ok && typeof firebase !== 'undefined'){
-    try{
-      firebase.initializeApp({
-        apiKey:"AIzaSyAYipIeiJ7zmSOm2de8Zw5-Tx1eEvYE_5w",
-        authDomain:"prayer-competition-2bac3.firebaseapp.com",
-        databaseURL:"https://prayer-competition-2bac3-default-rtdb.europe-west1.firebasedatabase.app",
-        projectId:"prayer-competition-2bac3",
-        storageBucket:"prayer-competition-2bac3.firebasestorage.app",
-        messagingSenderId:"113122235783",
-        appId:"1:113122235783:web:3cc02300ac28cbcbef6f22"
-      });
-      window.db = firebase.database();
-      window.firebaseReady = true;
-      window.window.db.ref('.info/connected').on('value',snap=>{
-        const el=document.getElementById('sync-dot');if(el)el.className='sync-dot '+(snap.val()?'ok':'err');
-        const st=document.getElementById('sync-status');if(st)st.textContent=snap.val()?'✓ Connected':'⚠ Offline';
-        // also load passwords from Firebase when connected
-        if(snap.val()) window.window.db.ref('passwords').once('value',s=>{if(s.val())passwords={...DEFAULT_PASSWORDS,...s.val()};});
-      });
-    }catch(e){
-      console.warn('Firebase init failed:', e);
-      const st=document.getElementById('sync-status');if(st)st.textContent='Offline mode — data saved locally';
-    }
-  } else {
-    const st=document.getElementById('sync-status');if(st)st.textContent='Offline mode — data saved locally';
-    const sd=document.getElementById('sync-dot');if(sd)sd.className='sync-dot err';
-  }
-})();
+firebase.initializeApp({
+  apiKey:"AIzaSyAYipIeiJ7zmSOm2de8Zw5-Tx1eEvYE_5w",
+  authDomain:"prayer-competition-2bac3.firebaseapp.com",
+  databaseURL:"https://prayer-competition-2bac3-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId:"prayer-competition-2bac3",
+  storageBucket:"prayer-competition-2bac3.firebasestorage.app",
+  messagingSenderId:"113122235783",
+  appId:"1:113122235783:web:3cc02300ac28cbcbef6f22"
+});
+const db=firebase.database();
+db.ref('.info/connected').on('value',snap=>{
+  const el=document.getElementById('sync-dot');if(el)el.className='sync-dot '+(snap.val()?'ok':'err');
+  const st=document.getElementById('sync-status');if(st)st.textContent=snap.val()?'✓ Connected':'⚠ Offline';
+});
 
 /* ══════════════════════════════════════
    CONSTANTS
@@ -511,8 +518,8 @@ function calcQuranEGP(uid, juzDone) {
 }
 
 const USERS={
-  reham:{ name:'Reham', pass:'reham123', female:false, isParent:true, children:['yassin','marwan'], color:'#534AB7', bg:'#EEEDFE' },
-  marwa:{ name:'Marwa',    pass:'marwa123', female:false, isParent:true, children:['aya','habiba'],    color:'#0F6E56', bg:'#E1F5EE' },
+  reham: { name:'Reham', pass:'reham123', female:false, isParent:true, children:['yassin','marwan'], color:'#534AB7', bg:'#EEEDFE' },
+  marwa: { name:'Marwa', pass:'marwa123', female:false, isParent:true, children:['aya','habiba'],    color:'#0F6E56', bg:'#E1F5EE' },
   yassin:{ name:'Yassin', pass:'yassin123', female:false, color:'#185FA5', bg:'#E6F1FB' },
   marwan:{ name:'Marwan', pass:'marwan123', female:false, color:'#BA7517', bg:'#FAEEDA' },
   aya:   { name:'Aya',    pass:'aya123',    female:true,  color:'#993556', bg:'#FBEAF0' },
@@ -531,15 +538,12 @@ let tickInterval=null, currentDayKey=null, dbRef=null, quranRef=null;
 ══════════════════════════════════════ */
 function fbListen(){
   if(dbRef){dbRef.off();dbRef=null;}
-  dbRef=window.db.ref('pdata');
+  dbRef=db.ref('pdata');
   dbRef.on('value',snap=>{pdata=Object.assign(pdata,{...snap.val()})||pdata;refreshCurrentTab();});
-}
-function fbListenBehav(){
-  if(window.db)window.window.db.ref('behavior').on('value',snap=>{if(!pdata._behav)pdata._behav={};pdata._behav=snap.val()||{};refreshTab();});
 }
 function fbListenQuran(){
   if(quranRef){quranRef.off();quranRef=null;}
-  quranRef=window.db.ref('quran');
+  quranRef=db.ref('quran');
   quranRef.on('value',snap=>{
     if(!pdata._quran)pdata._quran={};
     pdata._quran=snap.val()||{};
@@ -550,15 +554,7 @@ function refreshCurrentTab(){
   const active=document.querySelector('.nav-tab.active');
   if(active)active.click();
 }
-function refreshTab(){const a=document.querySelector('.nav-tab.active');if(a)a.click();}
-
-function safeDb(path){ return window.db ? window.window.db.ref(path) : null; }
-function fbSet(uid,dk,entry){
-  const ref=safeDb('pdata/'+uid+'/'+dk);
-  if(ref) ref.set(entry).then(()=>showToast('✓ Saved')).catch(()=>showToast('⚠ Save failed'));
-  else { localStorage.setItem('pdata_'+uid+'_'+dk, JSON.stringify(entry)); showToast('✓ Saved locally'); }
-}
-function fbSet(uid,dk,entry){window.db.ref(`pdata/${uid}/${dk}`).set(entry).then(()=>showToast('✓ Saved')).catch(()=>showToast('⚠ Save failed'));}
+function fbSet(uid,dk,entry){db.ref(`pdata/${uid}/${dk}`).set(entry).then(()=>showToast('✓ Saved')).catch(()=>showToast('⚠ Save failed'));}
 function getEntry(uid,dk){
   if(!pdata[uid])pdata[uid]={};
   if(!pdata[uid][dk])pdata[uid][dk]={prayers:{},exempt:false};
@@ -634,14 +630,6 @@ function msLeft(dk,p){const t=(timesCache[dk]||{})[p];if(!t)return 0;return Math
    AUTH
 ══════════════════════════════════════ */
 
-/* ── PASSWORD CHANGE ── */
-// Passwords with defaults — work instantly before Firebase loads
-const DEFAULT_PASSWORDS={yassin:'yassin123',marwan:'marwan123',aya:'aya123',habiba:'habiba123',reham:'reham123',marwa:'marwa123',admin:'admin2024'};
-let passwords={...DEFAULT_PASSWORDS};
-// Sync from Firebase in background — overrides defaults if user changed password
-if(window.db){window.window.db.ref('passwords').on('value',snap=>{if(snap.val())passwords={...DEFAULT_PASSWORDS,...snap.val()};});}
-function loadPasswords(){} // already loaded above
-
 function openModal(){
   document.getElementById('pw-modal').classList.add('open');
   ['pw-old','pw-new','pw-confirm'].forEach(id=>document.getElementById(id).value='');
@@ -650,27 +638,21 @@ function openModal(){
 }
 function closeModal(){document.getElementById('pw-modal').classList.remove('open');}
 function doChangePassword(){
-  const oldPw=document.getElementById('pw-old').value;
-  const newPw=document.getElementById('pw-new').value;
-  const con=document.getElementById('pw-confirm').value;
+  const op=document.getElementById('pw-old').value,np=document.getElementById('pw-new').value,cp=document.getElementById('pw-confirm').value;
   const err=document.getElementById('pw-err'),ok=document.getElementById('pw-ok');
   err.textContent='';ok.textContent='';
-  if(oldPw!==passwords[currentUser]){err.textContent='Current password is incorrect.';return;}
-  if(newPw.length<6){err.textContent='Min 6 characters.';return;}
-  if(newPw!==con){err.textContent='Passwords do not match.';return;}
-  if(window.db)window.window.db.ref('passwords/'+currentUser).set(newPw)
-    .then(()=>{ok.textContent='Password updated!';setTimeout(closeModal,1500);})
-    .catch(()=>{err.textContent='Save failed.';});
+  if(op!==(passwords[currentUser]||DEFAULT_PASSWORDS[currentUser])){err.textContent='Current password incorrect.';return;}
+  if(np.length<6){err.textContent='Min 6 characters.';return;}
+  if(np!==cp){err.textContent='Passwords do not match.';return;}
+  passwords[currentUser]=np;
+  if(window.db)window.db.ref('passwords/'+currentUser).set(np).then(()=>{ok.textContent='&#10003; Password updated!';setTimeout(closeModal,1500);});
+  else{ok.textContent='&#10003; Updated locally!';setTimeout(closeModal,1500);}
 }
 
 function doLogin(){
   const uid=document.getElementById('sel-user').value,pass=document.getElementById('inp-pass').value,err=document.getElementById('login-err');
   if(!uid){err.textContent='Please select a participant.';return;}
-  const u=USERS[uid];
-  if(!u){err.textContent='Unknown account.';return;}
-  // Check against live passwords first, fallback to defaults
-  const validPass=passwords[uid]||DEFAULT_PASSWORDS[uid];
-  if(pass!==validPass){err.textContent='Incorrect password.';return;}
+  const u=USERS[uid];if(!u||pass!==u.pass){err.textContent='Incorrect password.';return;}
   err.textContent='';currentUser=uid;enterApp();
 }
 function doLogout(){
@@ -684,19 +666,35 @@ async function enterApp(){
   const u=USERS[currentUser];
   const av=document.getElementById('av');av.textContent=u.name[0];av.style.background=u.bg;av.style.color=u.color;
   document.getElementById('av-name').textContent=u.name;
-  document.getElementById('av-sub').textContent=u.isAdmin?'Administrator':'🥇<15min · 🥈<30min · 🥉<45min';
-  document.getElementById('nt-admin').style.display=u.isAdmin?'':'none';
-  document.getElementById('nt-behavior').style.display=(u.isAdmin||u.isParent)?'':'none';
-  // Parent accounts: hide cairo bar, add behavior tab
-  if(u.isParent||u.isAdmin){
+  document.getElementById('av-sub').textContent=u.isAdmin?'Administrator':u.isParent?('Children: '+(u.children||[]).map(k=>USERS[k]?.name||k).join(' & ')):'🥇<15min · 🥈<30min · 🥉<45min';
+  // Build nav based on role
+  const allTabs=['tracker','quran','rewards','stats','board','admin','behavior'];
+  allTabs.forEach(id=>{
+    const el=document.getElementById('nt-'+id);if(el)el.style.display='none';
+  });
+  if(u.isAdmin){
+    // Admin sees all
+    allTabs.forEach(id=>{const el=document.getElementById('nt-'+id);if(el)el.style.display='';});
+  } else if(u.isParent){
+    // Parents see only: Behavior + Progress (admin tab renamed)
+    ['behavior','admin'].forEach(id=>{const el=document.getElementById('nt-'+id);if(el)el.style.display='';});
     document.getElementById('cairo-bar-wrap').style.display='none';
+    // Rename admin tab to Progress for parents
+    const adminTab=document.getElementById('nt-admin');
+    if(adminTab)adminTab.textContent='📊 Progress';
+  } else {
+    // Participants see: Tracker, Quran, Rewards, Stats, Leaderboard, Behavior(read-only)
+    ['tracker','quran','rewards','stats','board','behavior'].forEach(id=>{const el=document.getElementById('nt-'+id);if(el)el.style.display='';});
   }
   document.getElementById('s-login').classList.remove('active');document.getElementById('s-main').classList.add('active');
   updateCompBanner();
   const tk=todayKey();currentDayKey=tk>=COMP_START&&tk<=COMP_END?tk:(tk<COMP_START?COMP_START:COMP_END);
-  fbListen();fbListenQuran();fbListenBehav();
+  fbListen();fbListenQuran();loadBehavData();
   await fetchPrayerTimes(todayKey());updateNextPrayer();
-  showTab('tracker',document.getElementById('nt-tracker'));startTick();
+  // Click first visible tab
+  const firstVisibleTab = document.querySelector('.nav-tab[style=""]') || document.querySelector('.nav-tab');
+  if(firstVisibleTab) firstVisibleTab.click();
+  else showTab('tracker', document.getElementById('nt-tracker'));startTick();
 }
 
 /* ══════════════════════════════════════
@@ -729,11 +727,19 @@ function updateCompBanner(){
    TABS
 ══════════════════════════════════════ */
 function showTab(t,btn){
-  ['tracker','quran','rewards','stats','board','admin'].forEach(id=>document.getElementById('tab-'+id).style.display='none');
+  ['tracker','quran','rewards','stats','board','admin','behavior'].forEach(id=>{
+    const el=document.getElementById('tab-'+id);if(el)el.style.display='none';
+  });
   document.querySelectorAll('.nav-tab').forEach(el=>el.classList.remove('active'));
-  document.getElementById('tab-'+t).style.display='';if(btn)btn.classList.add('active');
-  if(t==='tracker')buildTracker();if(t==='quran')buildQuran();if(t==='rewards')buildRewards();
-  if(t==='stats')buildStats(currentUser,'tab-stats');if(t==='board')buildLeaderboard();if(t==='admin')buildAdminTab();
+  const tabEl=document.getElementById('tab-'+t);if(tabEl)tabEl.style.display='';
+  if(btn)btn.classList.add('active');
+  if(t==='tracker') buildTracker();
+  if(t==='quran')   buildQuran();
+  if(t==='rewards') buildRewards();
+  if(t==='stats')   buildStats(currentUser,'tab-stats');
+  if(t==='board')   buildLeaderboard();
+  if(t==='admin')   buildAdminTab();
+  if(t==='behavior')buildBehavior();
 }
 
 /* ══════════════════════════════════════
@@ -941,15 +947,15 @@ function buildQuran(){
 
 function markJuz(j){
   const uid=currentUser;
-  window.db.ref(`quran/${uid}/juz/${j}`).set(true).then(()=>{showToast(`✅ Juz ${j} marked complete!`);triggerConfetti();}).catch(()=>showToast('⚠ Save failed'));
+  db.ref(`quran/${uid}/juz/${j}`).set(true).then(()=>{showToast(`✅ Juz ${j} marked complete!`);triggerConfetti();}).catch(()=>showToast('⚠ Save failed'));
 }
 function unmarkJuz(j){
   const uid=currentUser;
-  window.db.ref(`quran/${uid}/juz/${j}`).set(false).then(()=>showToast(`↩ Juz ${j} unmarked`)).catch(()=>showToast('⚠ Save failed'));
+  db.ref(`quran/${uid}/juz/${j}`).set(false).then(()=>showToast(`↩ Juz ${j} unmarked`)).catch(()=>showToast('⚠ Save failed'));
 }
 function saveQuranToday(){
   const val=parseInt(document.getElementById('ayat-inp').value)||0;
-  if(window.db)window.window.db.ref(`quran/${currentUser}/today`).set(val).then(()=>{showToast('📖 Reading saved!');buildQuran();}).catch(()=>showToast('⚠ Save failed'));
+  db.ref(`quran/${currentUser}/today`).set(val).then(()=>{showToast('📖 Reading saved!');buildQuran();}).catch(()=>showToast('⚠ Save failed'));
 }
 function quickAyat(n){
   document.getElementById('ayat-inp').value=n;saveQuranToday();
@@ -959,123 +965,189 @@ function quickAyat(n){
    REWARDS TAB
 ══════════════════════════════════════ */
 
-/* ── BEHAVIOR CATEGORIES ── */
+/* ── BEHAVIOR CATEGORIES (8 categories for ages 12-16) ── */
 const BEHAV_CATS=[
-  {id:'respect',   icon:'&#129309;', name:'Respect',           desc:['Rude/arguing','Sometimes','OK','Respectful','Excellent'],       color:'#E24B4A'},
-  {id:'chores',    icon:'&#127968;', name:'Chores & Tidiness',  desc:['Nothing done','Reminded 3x','Reminded once','Did it','Proactive'],color:'#EF9F27'},
-  {id:'school',    icon:'&#128218;', name:'School & Homework',  desc:['Refused','Needs pushing','Did late','On time','Ahead'],          color:'#5DCAA5'},
-  {id:'honesty',   icon:'&#128172;', name:'Honesty',            desc:['Lied','Hid something','Partly honest','Honest','Fully open'],    color:'#639922'},
-  {id:'siblings',  icon:'&#128106;', name:'Sibling Kindness',   desc:['Fought','Tense','Neutral','Kind','Caring'],                     color:'#534AB7'},
-  {id:'phone',     icon:'&#128241;', name:'Phone Discipline',   desc:['All day','3h+','2h','1h','No excess'],                          color:'#993556'},
-  {id:'prayer_att',icon:'&#128332;', name:'Prayer Willingness', desc:['Refused','Complained','Did it','Willing','With joy'],           color:'#0F6E56'},
-  {id:'mood',      icon:'&#128522;', name:'General Mood',       desc:['Very negative','Difficult','Neutral','Positive','Joyful'],       color:'#BA7517'}
+  {id:'respect',    icon:'🤝', name:'Respect',           descs:['Rude/arguing','Sometimes rude','OK','Respectful','Excellent'], color:'#E24B4A'},
+  {id:'chores',     icon:'🏠', name:'Chores & Tidiness',  descs:['Did nothing','Reminded 3x','Reminded once','Did it','Proactive'], color:'#EF9F27'},
+  {id:'school',     icon:'📚', name:'School & Homework',  descs:['Refused','Needs pushing','Did it late','On time','Ahead of time'], color:'#5DCAA5'},
+  {id:'honesty',    icon:'💬', name:'Honesty',            descs:['Lied','Hid something','Partly honest','Honest','Fully open'], color:'#639922'},
+  {id:'siblings',   icon:'👨‍👩‍👧', name:'Sibling Kindness',  descs:['Fought','Tense','Neutral','Kind','Very caring'], color:'#534AB7'},
+  {id:'phone',      icon:'📱', name:'Phone Discipline',   descs:['Used all day','3h+','About 2h','About 1h','No excess'], color:'#993556'},
+  {id:'prayer_att', icon:'🕌', name:'Prayer Willingness', descs:['Refused','Complained','Did it','Willing','With joy'], color:'#0F6E56'},
+  {id:'mood',       icon:'😊', name:'General Mood',       descs:['Very negative','Difficult','Neutral','Positive','Joyful'], color:'#BA7517'}
 ];
-const EGP_BEHAV_PERFECT=5;
+const EGP_BEHAV = 5; // bonus EGP per day if score >= 80%
 
-function getBehavData(uid){return(pdata._behav||{})[uid]||{};}
+let behavData = {}; // local behavior cache
 
+function loadBehavData(){
+  if(window.db){
+    window.db.ref('behavior').on('value', snap=>{
+      behavData = snap.val()||{};
+      const a=document.querySelector('.nav-tab.active');if(a)a.click();
+    });
+  }
+}
+
+function getBehavDay(uid, dk){ return ((behavData[uid]||{})[dk])||{scores:{},note:''}; }
+function getBehavScore(uid, dk){
+  const d=getBehavDay(uid,dk);
+  return BEHAV_CATS.reduce((s,c)=>s+(d.scores[c.id]||0),0);
+}
+function getBehavEGP(uid){
+  return getAllCompDays().reduce((s,dk)=>{
+    const tot=getBehavScore(uid,dk), max=BEHAV_CATS.length*5;
+    return s+(max>0&&Math.round((tot/max)*100)>=80?EGP_BEHAV:0);
+  },0);
+}
+
+/* ── BUILD BEHAVIOR TAB ── */
 function buildBehavior(){
   const u=USERS[currentUser];
-  if(u.isParent) { buildParentBehavior(); return; }
-  if(u.isAdmin)  { buildAdminBehaviorView(); return; }
+  if(u.isParent){ buildParentBehavior(); return; }
+  // Participant: read-only view of their own scores
   buildChildBehaviorView(currentUser);
 }
+
+let _selChild = null;
 
 function buildParentBehavior(){
   const u=USERS[currentUser];
   const children=u.children||[];
-  if(!window._behavChild||!children.includes(window._behavChild)) window._behavChild=children[0];
-  const uid=window._behavChild;
+  if(!_selChild||!children.includes(_selChild)) _selChild=children[0];
+  renderBehaviorFor(_selChild, children);
+}
+
+function renderBehaviorFor(uid, allChildren){
   const dk=todayKey();
-  const bdata=getBehavData(uid);
-  const dayData=bdata[dk]||{};
+  const dayData=getBehavDay(uid,dk);
   const scores=dayData.scores||{};
   const max=BEHAV_CATS.length*5;
   const total=BEHAV_CATS.reduce((s,c)=>s+(scores[c.id]||0),0);
   const pct=max>0?Math.round((total/max)*100):0;
-  const egp=pct>=80?EGP_BEHAV_PERFECT:0;
+  const egp=pct>=80?EGP_BEHAV:0;
   const stars=Math.round(pct/20);
-  const starsHtml=Array.from({length:5},(_,i)=>'<span style="font-size:22px;filter:'+(i<stars?'none':'grayscale(1)')+(i<stars?';opacity:1':';opacity:.3')+'" >&#11088;</span>').join('');
+  const starsHtml=Array.from({length:5},(_,i)=>`<span style="font-size:20px;opacity:${i<stars?1:.2}">${i<stars?'⭐':'⭐'}</span>`).join('');
 
+  // Child selector chips
+  const chipHtml=allChildren.map(c2=>`<button class="chip ${c2===uid?'active':''}" onclick="selectBehavChild('${c2}')">${USERS[c2].name}</button>`).join('');
+
+  // Category cards
   const catHtml=BEHAV_CATS.map(cat=>{
     const val=scores[cat.id]||0;
     const dots=Array.from({length:5},(_,i)=>{
       const v=i+1;
-      const colorMap={'1':'#E24B4A','2':'#EF9F27','3':'#5DCAA5','4':'#639922','5':'#3B6D11'};
-      const bg=v<=val?colorMap[String(v)]:'transparent';
-      const border=v<=val?colorMap[String(v)]:'rgba(0,0,0,0.18)';
-      return '<div onclick="setBehavScore(\''+uid+'\',\''+dk+'\',\''+cat.id+'\','+v+')" style="width:22px;height:22px;border-radius:50%;border:2px solid '+border+';cursor:pointer;background:'+bg+';display:inline-block;margin:0 2px;vertical-align:middle"></div>';
+      return `<div class="cat-dot ${v<=val?'filled-'+v:''}" onclick="setBehavDot('${uid}','${dk}','${cat.id}',${v})" title="${cat.descs[i]}"></div>`;
     }).join('');
-    return '<div style="background:var(--surface);border:1px solid var(--bd);border-radius:var(--rm);padding:12px;box-shadow:var(--shadow)"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span style="font-size:1.4rem">'+cat.icon+'</span><span style="font-size:12px;font-weight:700">'+cat.name+'</span></div><div style="text-align:center;margin-bottom:6px">'+dots+'</div><div style="font-size:10px;color:'+(val?cat.color:'var(--mu)')+';text-align:center">'+(val?cat.desc[val-1]:'tap to rate')+'</div></div>';
+    return `<div class="cat-card">
+      <div class="cat-hdr"><span style="font-size:1.3rem">${cat.icon}</span><span style="font-size:12px;font-weight:700">${cat.name}</span></div>
+      <div class="cat-dots">${dots}</div>
+      <div class="cat-desc-text" style="color:${val?cat.color:'var(--mu)'}">${val?cat.descs[val-1]:'tap to rate'}</div>
+    </div>`;
   }).join('');
 
   // History last 7 days
-  const histDays=Object.keys(bdata).sort().slice(-7).reverse();
+  const histDays=Object.keys(behavData[uid]||{}).sort().slice(-7).reverse();
   const histHtml=histDays.map(d=>{
-    const sc=bdata[d].scores||{},tot=BEHAV_CATS.reduce((s,c)=>s+(sc[c.id]||0),0),p=max>0?Math.round((tot/max)*100):0;
+    const sc=(behavData[uid][d]?.scores)||{};
+    const tot=BEHAV_CATS.reduce((s,c)=>s+(sc[c.id]||0),0);
+    const p=max>0?Math.round((tot/max)*100):0;
     const col=p>=80?'var(--green)':p>=60?'var(--gold-m)':'var(--red)';
-    const note=bdata[d].note?'<div style="font-size:11px;color:var(--mu);font-style:italic;margin-top:2px">"'+bdata[d].note+'"</div>':'';
-    return '<div style="padding:8px 0;border-bottom:1px solid var(--bd)"><div style="display:flex;align-items:center;gap:10px;font-size:13px"><span style="width:70px;color:var(--mu);font-size:12px;flex-shrink:0">'+fmtShort(d)+'</span><div style="flex:1;height:10px;background:var(--s3);border-radius:99px;overflow:hidden"><div style="height:100%;width:'+p+'%;background:'+col+';border-radius:99px"></div></div><span style="width:40px;text-align:right;font-weight:700;color:'+col+'">'+tot+'/'+max+'</span></div>'+note+'</div>';
+    const note=behavData[uid][d]?.note?`<div class="hist-note2">"${behavData[uid][d].note}"</div>`:'';
+    return `<div class="hist-item"><div class="hist-row2">
+      <span class="hist-date2">${fmtShort(d)}</span>
+      <div style="flex:1;height:10px;background:var(--s3);border-radius:99px;overflow:hidden"><div style="height:100%;width:${p}%;background:${col};border-radius:99px"></div></div>
+      <span style="width:44px;text-align:right;font-weight:700;color:${col};font-size:12px">${tot}/${max}</span>
+    </div>${note}</div>`;
   }).join('');
 
-  const childChips=children.map(c=>'<button style="padding:6px 14px;font-size:13px;font-weight:500;border-radius:99px;border:1px solid var(--bd2);cursor:pointer;background:'+(c===uid?'var(--gold-l)':'var(--s2)')+';color:'+(c===uid?'var(--gold)':'var(--tx)')+'" onclick="setParentChild(\''+c+'\')">'+USERS[c].name+'</button>').join('');
+  document.getElementById('tab-behavior').innerHTML=`
+    <div style="display:flex;gap:8px;margin-bottom:.75rem">${chipHtml}</div>
 
-  document.getElementById('tab-behavior').innerHTML='<div style="display:flex;gap:8px;margin-bottom:.75rem">'+childChips+'</div>'
-    +'<div style="border-radius:var(--r);padding:1.25rem;margin-bottom:.75rem;background:linear-gradient(135deg,#1a0830,#3a1060);border:1px solid var(--bd)">'
-    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem"><div><div style="color:rgba(255,255,255,.6);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em">Today's Rating</div><div style="color:#fff;font-size:18px;font-weight:800">'+USERS[uid].name+' · '+fmtShort(dk)+'</div></div><div style="text-align:right"><div style="font-size:42px;font-weight:900;color:#E8D5FF;line-height:1">'+total+'<span style="font-size:18px;color:rgba(255,255,255,.4)">/'+max+'</span></div><div style="font-size:11px;color:rgba(255,255,255,.5)">'+pct+'% · '+(egp>0?'+'+egp+' EGP bonus':'need 80%+ for bonus')+'</div></div></div>'
-    +'<div style="display:flex;gap:4px;justify-content:center;margin-bottom:.5rem">'+starsHtml+'</div></div>'
-    +'<div style="font-size:11px;padding:8px 12px;background:var(--s2);border-radius:var(--rm);margin-bottom:.75rem;display:flex;gap:8px;flex-wrap:wrap"><span style="font-weight:600;color:var(--mu)">Rating:</span><span>&#128308;1=Poor</span><span>&#128992;2=Fair</span><span>&#128994;3=OK</span><span>&#128995;4=Good</span><span>&#9989;5=Excellent</span></div>'
-    +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:.75rem">'+catHtml+'</div>'
-    +'<div style="background:var(--surface);border:1px solid var(--bd);border-radius:var(--rm);padding:12px;margin-bottom:.75rem"><h4 style="font-size:13px;font-weight:700;margin-bottom:.5rem">&#128221; Daily Note</h4><textarea style="width:100%;padding:10px;font-size:13px;border:1px solid var(--bd2);border-radius:var(--rm);background:var(--s2);color:var(--tx);resize:vertical;min-height:70px;font-family:inherit;outline:none" id="behav-note" placeholder="Observations, behavior incidents...">'+(dayData.note||'')+'</textarea><div style="display:flex;gap:8px;margin-top:.5rem;align-items:center"><button class="save-btn" onclick="saveBehavior(\''+uid+'\',\''+dk+'\')">&#128190; Save behavior</button>'+(egp>0?'<span style="font-size:13px;font-weight:700;color:var(--gold);background:var(--gold-l);padding:6px 12px;border-radius:99px">&#128176; +'+egp+' EGP!</span>':'<span style="font-size:12px;color:var(--mu)">Score 80%+ for +'+EGP_BEHAV_PERFECT+' EGP bonus</span>')+'</div></div>'
-    +(histDays.length>0?'<div style="background:var(--surface);border:1px solid var(--bd);border-radius:var(--rm);padding:12px"><h4 style="font-size:13px;font-weight:700;margin-bottom:.5rem">&#128197; History</h4>'+histHtml+'</div>':'');
+    <div class="behav-hero">
+      <div class="bh-top">
+        <div><div class="bh-title">Today's Behavior</div><div class="bh-name">${USERS[uid].name} · ${fmtShort(dk)}</div></div>
+        <div class="bh-score"><div class="bh-big">${total}<span style="font-size:16px;color:rgba(255,255,255,.3)">/${max}</span></div><div class="bh-sub">${pct}%${egp>0?' · +'+egp+' EGP bonus!':' · need 80%+ for +'+EGP_BEHAV+' EGP'}</div></div>
+      </div>
+      <div class="bh-stars">${starsHtml}</div>
+    </div>
+
+    <div class="rating-legend">
+      <strong style="color:var(--tx)">Rating:</strong>
+      <span>🔴 1 = Poor</span><span>🟠 2 = Fair</span><span>🟢 3 = OK</span><span>🟩 4 = Good</span><span>✅ 5 = Excellent</span>
+    </div>
+
+    <div class="cat-grid">${catHtml}</div>
+
+    <div class="day-card">
+      <h4 style="font-size:13px;font-weight:700;margin-bottom:.5rem">📝 Daily Note</h4>
+      <textarea class="bh-note" id="bh-note-${uid}" placeholder="Any observations about today's behavior...">${dayData.note||''}</textarea>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:.75rem;flex-wrap:wrap">
+        <button class="save-btn" onclick="saveBehavior('${uid}','${dk}')">💾 Save today's rating</button>
+        ${egp>0?`<span class="egp-badge">💰 +${egp} EGP bonus earned!</span>`:`<span style="font-size:12px;color:var(--mu)">Score 80%+ for +${EGP_BEHAV} EGP bonus</span>`}
+      </div>
+    </div>
+
+    ${histDays.length>0?`<div class="day-card"><h4 style="font-size:13px;font-weight:700;margin-bottom:.75rem">📅 Recent History</h4>${histHtml}</div>`:''}
+  `;
 }
 
-function setParentChild(uid){window._behavChild=uid;buildParentBehavior();}
-
-function buildChildBehaviorView(uid){
-  const bdata=getBehavData(uid);
-  const days=Object.keys(bdata).sort().slice(-14).reverse();
-  const max=BEHAV_CATS.length*5;
-  if(days.length===0){document.getElementById('tab-behavior').innerHTML='<div class="out-banner"><div class="ob-ico">&#11088;</div><h3>No behavior ratings yet</h3><p>Your parent rates your behavior here each day.</p></div>';return;}
-  const avg=days.length>0?Math.round(days.reduce((s,d)=>{const sc=bdata[d].scores||{};return s+BEHAV_CATS.reduce((ss,c)=>ss+(sc[c.id]||0),0);},0)/(days.length*max)*100):0;
-  const starsHtml=Array.from({length:5},(_,i)=>'<span style="font-size:22px;filter:'+(i<Math.round(avg/20)?'none':'grayscale(1)')+(i<Math.round(avg/20)?';opacity:1':';opacity:.3')+'" >&#11088;</span>').join('');
-  const histHtml=days.map(d=>{
-    const sc=bdata[d].scores||{},tot=BEHAV_CATS.reduce((s,c)=>s+(sc[c.id]||0),0),p=max>0?Math.round((tot/max)*100):0;
-    const col=p>=80?'var(--green)':p>=60?'var(--gold-m)':'var(--red)';
-    const note=bdata[d].note?'<div style="font-size:11px;color:var(--mu);font-style:italic;margin-top:2px">"'+bdata[d].note+'"</div>':'';
-    return '<div style="padding:8px 0;border-bottom:1px solid var(--bd)"><div style="display:flex;align-items:center;gap:10px;font-size:13px"><span style="width:70px;color:var(--mu);font-size:12px">'+fmtShort(d)+'</span><div style="flex:1;height:10px;background:var(--s3);border-radius:99px;overflow:hidden"><div style="height:100%;width:'+p+'%;background:'+col+';border-radius:99px"></div></div><span style="width:40px;text-align:right;font-weight:700;color:'+col+'">'+tot+'/'+max+'</span></div>'+note+'</div>';
-  }).join('');
-  document.getElementById('tab-behavior').innerHTML='<div style="border-radius:var(--r);padding:1.25rem;margin-bottom:.75rem;background:linear-gradient(135deg,#1a0830,#3a1060);border:1px solid var(--bd)"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem"><div style="color:rgba(255,255,255,.6);font-size:11px;font-weight:600;text-transform:uppercase">Your Behavior Score</div><div style="font-size:36px;font-weight:900;color:#E8D5FF">'+avg+'<span style="font-size:16px;color:rgba(255,255,255,.4)">%</span></div></div><div style="display:flex;gap:4px;justify-content:center">'+starsHtml+'</div><div style="font-size:12px;color:rgba(255,255,255,.5);text-align:center;margin-top:6px">avg last '+days.length+' days</div></div><div style="background:var(--surface);border:1px solid var(--bd);border-radius:var(--rm);padding:12px"><h4 style="font-size:13px;font-weight:700;margin-bottom:.5rem">&#128197; Recent Ratings</h4>'+histHtml+'</div>';
+function selectBehavChild(uid){
+  _selChild=uid;
+  const u=USERS[currentUser];
+  renderBehaviorFor(uid, u.children||[]);
 }
 
-function buildAdminBehaviorView(){
-  const kids=['yassin','marwan','aya','habiba'];const max=BEHAV_CATS.length*5;
-  let html='<div class="sec-ttl">Behavior Overview</div>';
-  html+=kids.map(uid=>{
-    const bdata=getBehavData(uid),days=Object.keys(bdata).sort().slice(-7);
-    const avg=days.length>0?Math.round(days.reduce((s,d)=>{const sc=bdata[d].scores||{};return s+BEHAV_CATS.reduce((ss,c)=>ss+(sc[c.id]||0),0);},0)/(days.length*max)*100):0;
-    const col=avg>=80?'var(--green)':avg>=60?'var(--gold-m)':'var(--red)';
-    const u=USERS[uid];
-    return '<div class="lb-row"><div class="av" style="background:'+u.bg+';color:'+u.color+';flex-shrink:0;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700">'+u.name[0]+'</div><div class="lb-info"><div class="lb-name" style="color:'+u.color+'">'+u.name+'</div><div class="lb-detail">Avg last '+days.length+' days</div></div><div style="font-size:18px;font-weight:800;color:'+col+'">'+avg+'%</div></div>';
-  }).join('');
-  document.getElementById('tab-behavior').innerHTML=html;
+function setBehavDot(uid,dk,catId,val){
+  if(!behavData[uid])behavData[uid]={};
+  if(!behavData[uid][dk])behavData[uid][dk]={scores:{},note:''};
+  // Toggle: click same value to unset
+  const cur=behavData[uid][dk].scores[catId]||0;
+  behavData[uid][dk].scores[catId]=(cur===val?0:val);
+  const u=USERS[currentUser];
+  renderBehaviorFor(uid, u.children||[]);
 }
-
-window.setBehavScore=function(uid,dk,catId,val){
-  if(!pdata._behav)pdata._behav={};
-  if(!pdata._behav[uid])pdata._behav[uid]={};
-  if(!pdata._behav[uid][dk])pdata._behav[uid][dk]={scores:{},note:''};
-  const cur=pdata._behav[uid][dk].scores[catId]||0;
-  pdata._behav[uid][dk].scores[catId]=(cur===val?0:val);
-  buildParentBehavior();
-};
 
 function saveBehavior(uid,dk){
-  const note=document.getElementById('behav-note')?.value||'';
-  const scores=(pdata._behav?.[uid]?.[dk]?.scores)||{};
-  if(window.db)window.window.db.ref('behavior/'+uid+'/'+dk).set({scores,note})
-    .then(()=>showToast('&#11088; Behavior saved!'))
-    .catch(()=>showToast('&#9888; Failed'));
+  const noteEl=document.getElementById('bh-note-'+uid);
+  const note=noteEl?noteEl.value:'';
+  const scores=(behavData[uid]?.[dk]?.scores)||{};
+  if(window.db){
+    window.db.ref('behavior/'+uid+'/'+dk).set({scores,note})
+      .then(()=>showToast('⭐ Behavior saved!'))
+      .catch(()=>showToast('⚠ Save failed'));
+  } else {
+    showToast('⭐ Saved locally');
+  }
+}
+
+function buildChildBehaviorView(uid){
+  const max=BEHAV_CATS.length*5;
+  const myData=behavData[uid]||{};
+  const days=Object.keys(myData).sort().slice(-14).reverse();
+  if(days.length===0){
+    document.getElementById('tab-behavior').innerHTML='<div class="out-banner"><div class="ob-ico">⭐</div><h3>No behavior ratings yet</h3><p>Your parent rates your behavior here each day. Check back soon!</p></div>';
+    return;
+  }
+  const avg=Math.round(days.reduce((s,d)=>{const sc=myData[d].scores||{};return s+BEHAV_CATS.reduce((ss,c)=>ss+(sc[c.id]||0),0);},0)/(days.length*max)*100);
+  const stars=Math.round(avg/20);
+  const starsHtml=Array.from({length:5},(_,i)=>`<span style="font-size:22px;opacity:${i<stars?1:.2}">⭐</span>`).join('');
+  const histHtml=days.map(d=>{
+    const sc=myData[d].scores||{},tot=BEHAV_CATS.reduce((s,c)=>s+(sc[c.id]||0),0),p=max>0?Math.round((tot/max)*100):0;
+    const col=p>=80?'var(--green)':p>=60?'var(--gold-m)':'var(--red)';
+    const note=myData[d].note?`<div class="hist-note2">"${myData[d].note}"</div>`:'';
+    return `<div class="hist-item"><div class="hist-row2"><span class="hist-date2">${fmtShort(d)}</span><div style="flex:1;height:10px;background:var(--s3);border-radius:99px;overflow:hidden"><div style="height:100%;width:${p}%;background:${col};border-radius:99px"></div></div><span style="width:44px;text-align:right;font-weight:700;color:${col};font-size:12px">${tot}/${max}</span></div>${note}</div>`;
+  }).join('');
+
+  document.getElementById('tab-behavior').innerHTML=`
+    <div class="behav-hero">
+      <div class="bh-top">
+        <div><div class="bh-title">My Behavior Score</div><div class="bh-name">${USERS[uid].name}</div></div>
+        <div class="bh-score"><div class="bh-big">${avg}<span style="font-size:16px;color:rgba(255,255,255,.3)">%</span></div><div class="bh-sub">avg last ${days.length} days</div></div>
+      </div>
+      <div class="bh-stars">${starsHtml}</div>
+    </div>
+    <div class="day-card"><h4 style="font-size:13px;font-weight:700;margin-bottom:.75rem">📅 Recent Ratings</h4>${histHtml}</div>`;
 }
 
 function calcStats(uid){
@@ -1095,13 +1167,7 @@ function calcStats(uid){
   const qdata=getQuranData(uid);
   const juzDone=Object.values(qdata.juz||{}).filter(v=>v===true).length;
   const quranEGP=calcQuranEGP(uid,juzDone);
-  const bdata2=getBehavData(uid);
-  const bmax=BEHAV_CATS.length*5;
-  const behavEGP=getAllCompDays().reduce((s,dk)=>{
-    const sc=(bdata2[dk]?.scores)||{};
-    const tot=BEHAV_CATS.reduce((ss,c)=>ss+(sc[c.id]||0),0);
-    return s+(bmax>0&&Math.round((tot/bmax)*100)>=80?EGP_BEHAV_PERFECT:0);
-  },0);
+  const behavEGP=getBehavEGP(uid);
   const totalEGP=prayerEGP+quranEGP+behavEGP;
   const activeDays=days.length-exemptDays;
   const pct=totalPossible>0?Math.round((totalDone/totalPossible)*100):0;
@@ -1166,7 +1232,6 @@ function buildStats(uid,cid){
     <div class="stat-card"><div class="s-lbl">Completion</div><div class="s-val green">${s.pct}%</div></div>
     <div class="stat-card"><div class="s-lbl">Prayer EGP</div><div class="s-val gold">${s.prayerEGP}</div></div>
     <div class="stat-card"><div class="s-lbl">Quran EGP</div><div class="s-val purple">${s.quranEGP}</div></div>
-    <div class="stat-card"><div class="s-lbl">Behavior EGP</div><div class="s-val purple">${s.behavEGP}</div></div>
     <div class="stat-card"><div class="s-lbl">Total EGP</div><div class="s-val gold">${s.totalEGP}</div></div>
     <div class="stat-card"><div class="s-lbl">Juz done</div><div class="s-val green">${s.juzDone}${p?'/'+p.totalJuz:''}</div></div>
     <div class="stat-card"><div class="s-lbl">Perfect days</div><div class="s-val green">${s.perfectDays}</div></div>
@@ -1199,8 +1264,12 @@ function buildLeaderboard(){
    ADMIN
 ══════════════════════════════════════ */
 function buildAdminTab(){
-  const chips=['yassin','marwan','aya','habiba'].map(uid=>`<button class="chip" onclick="adminPick('${uid}',this)">${USERS[uid].name}</button>`).join('');
-  document.getElementById('tab-admin').innerHTML=`<div class="sec-ttl">View participant</div><div class="chip-row">${chips}</div><div id="admin-inner"><p style="font-size:13px;color:var(--mu)">Select a participant above.</p></div>`;
+  const u=USERS[currentUser];
+  // Parents only see their own children; admin sees all
+  const allowed = u.isParent ? u.children : ['yassin','marwan','aya','habiba'];
+  const chips=allowed.map(uid=>`<button class="chip" onclick="adminPick('${uid}',this)">${USERS[uid].name}</button>`).join('');
+  const title = u.isParent ? 'Your Children\'s Progress' : 'All Participants';
+  document.getElementById('tab-admin').innerHTML=`<div class="sec-ttl">${title}</div><div class="chip-row">${chips}</div><div id="admin-inner"><p style="font-size:13px;color:var(--mu)">Select a participant above.</p></div>`;
 }
 function adminPick(uid,btn){document.querySelectorAll('.chip').forEach(b=>b.classList.remove('active'));btn.classList.add('active');document.getElementById('admin-inner').innerHTML=`<div id="as-${uid}"></div>`;buildStats(uid,`as-${uid}`);}
 
