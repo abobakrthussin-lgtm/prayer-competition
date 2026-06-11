@@ -833,7 +833,7 @@ function buildQuran(){
   // Count completed juz (stored as juz number keys e.g. "29": true)
   const juzDone=Object.values(qdata.juz||{}).filter(v=>v===true).length;
   const todayAyat=qdata.today||0;
-  const pct=Math.min(100,Math.round((juzDone/profile.totalJuz)*100));
+  const pct=Math.min(100,Math.round((juzDone/30)*100));
   const egp=calcQuranEGP(uid,juzDone);
 
   // Circular progress values
@@ -856,8 +856,8 @@ function buildQuran(){
       <div>
         <div class="quran-hero-title">📖 Your Quran Journey</div>
         <div class="quran-hero-name">${USERS[uid].name}</div>
-        <div class="quran-hero-juz">${profile.label}</div>
-        <div style="margin-top:6px;font-size:11px;color:rgba(255,255,255,.5)">${profile.tip}</div>
+        <div class="quran-hero-juz">The Whole Quran — 30 Juz open</div>
+        <div style="margin-top:6px;font-size:11px;color:rgba(255,255,255,.5)">Read at your own pace — every juz counts! 📖</div>
       </div>
       <div class="quran-icon-wrap">📖</div>
     </div>
@@ -872,13 +872,13 @@ function buildQuran(){
       </svg>
       <div class="circ-text">
         <div class="circ-pct">${pct}%</div>
-        <div class="circ-lbl">${juzDone}/${profile.totalJuz} juz</div>
+        <div class="circ-lbl">${juzDone}/30 juz</div>
       </div>
     </div>
 
     <div class="quran-stats-row">
       <div class="qstat"><div class="qstat-val">${juzDone}</div><div class="qstat-lbl">Juz done</div></div>
-      <div class="qstat"><div class="qstat-val">${profile.totalJuz-juzDone}</div><div class="qstat-lbl">Remaining</div></div>
+      <div class="qstat"><div class="qstat-val">${30-juzDone}</div><div class="qstat-lbl">Remaining</div></div>
       <div class="qstat"><div class="qstat-val">🎁</div><div class="qstat-lbl">Finish for surprise</div></div>
     </div>
   </div>
@@ -886,7 +886,7 @@ function buildQuran(){
   <div class="juz-track-wrap">
     <div class="juz-track-hdr">
       <h4>🗺 Juz Progress Map</h4>
-      <span>${profile.surahs}</span>
+      <span>Juz 1 — 30</span>
     </div>
     <div class="juz-grid">${juzCells}</div>
     <div class="juz-legend"><span><div class="dot" style="background:var(--green);border-radius:2px"></div>Completed</span><span><div class="dot" style="background:var(--s3);border-radius:2px"></div>Not yet</span></div>
@@ -1166,7 +1166,7 @@ function buildRewards(){
   <div class="motiv-grid">
     <div class="motiv-card gold-card"><div class="mc-icon">🙏</div><div class="mc-val">${s.totalDone}</div><div class="mc-lbl">Prayers done</div></div>
     <div class="motiv-card green-card"><div class="mc-icon">⭐</div><div class="mc-val">${s.perfectDays}</div><div class="mc-lbl">Perfect days</div></div>
-    <div class="motiv-card teal-card"><div class="mc-icon">📖</div><div class="mc-val">${s.juzDone}/${profile?profile.totalJuz:'-'}</div><div class="mc-lbl">Juz completed</div></div>
+    <div class="motiv-card teal-card"><div class="mc-icon">📖</div><div class="mc-val">${s.juzDone}</div><div class="mc-lbl">Juz completed</div></div>
     <div class="motiv-card purple-card"><div class="mc-icon">🏅</div><div class="mc-val">${s.medalScore}</div><div class="mc-lbl">Medal points</div></div>
   </div>
 
@@ -1203,7 +1203,7 @@ function buildStats(uid,cid){
     <div class="stat-card"><div class="s-lbl">Prayer EGP</div><div class="s-val gold">${s.prayerEGP}</div></div>
     <div class="stat-card"><div class="s-lbl">Quran EGP</div><div class="s-val purple">${s.quranEGP}</div></div>
     <div class="stat-card"><div class="s-lbl">Total EGP</div><div class="s-val gold">${s.totalEGP}</div></div>
-    <div class="stat-card"><div class="s-lbl">Juz done</div><div class="s-val green">${s.juzDone}${p?'/'+p.totalJuz:''}</div></div>
+    <div class="stat-card"><div class="s-lbl">Juz done</div><div class="s-val green">${s.juzDone}</div></div>
     <div class="stat-card"><div class="s-lbl">Perfect days</div><div class="s-val green">${s.perfectDays}</div></div>
     <div class="stat-card"><div class="s-lbl">Medal score</div><div class="s-val purple">${s.medalScore}</div></div>
     ${u.female?`<div class="stat-card"><div class="s-lbl">Exempt days</div><div class="s-val">${s.exemptDays}</div></div>`:''}
@@ -1223,7 +1223,7 @@ function buildLeaderboard(){
   let h=`<div class="sec-ttl">Live standings · June 13 – Sep 1, 2026</div>`;
   h+=results.map((r,i)=>{
     const p=QURAN_PROFILES[r.uid];
-    return`<div class="lb-row"><div class="lb-rank">${ranks[i]}</div><div class="lb-info"><div class="lb-name" style="color:${r.color}">${r.name}</div><div class="lb-detail">${r.totalDone} prayers · 📖 ${r.juzDone}${p?'/'+p.totalJuz:''} juz · 🏅 ${r.medalScore} pts</div></div>${r.female&&r.exemptDays>0?`<span class="lb-badge">${r.exemptDays}x</span>`:''}<div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px"><div class="lb-pct">${r.pct}%</div><div class="lb-money">${r.totalEGP} EGP</div></div></div>`;
+    return`<div class="lb-row"><div class="lb-rank">${ranks[i]}</div><div class="lb-info"><div class="lb-name" style="color:${r.color}">${r.name}</div><div class="lb-detail">${r.totalDone} prayers · 📖 ${r.juzDone} juz · 🏅 ${r.medalScore} pts</div></div>${r.female&&r.exemptDays>0?`<span class="lb-badge">${r.exemptDays}x</span>`:''}<div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px"><div class="lb-pct">${r.pct}%</div><div class="lb-money">${r.totalEGP} EGP</div></div></div>`;
   }).join('');
   h+=`<div style="padding:10px 14px;background:var(--surface);border:1px solid var(--bd);border-radius:var(--rm);margin-top:.75rem;font-size:11px;color:var(--mu)">💰 ${EGP_PER_PRAYER} EGP per prayer · Quran bonus is a surprise 🎁<br>🏆 Tiebreaker: medal score → total prayers → juz completed</div>`;
   h+=`<div class="export-row"><button class="btn-outline" onclick="exportLeaderboard()">⬇ Export standings</button></div>`;
