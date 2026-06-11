@@ -425,13 +425,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 <div id="toast"></div>
 
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
+/* App starts immediately - Firebase loads async in background */
+window.db = null;
+window.firebaseReady = false;
+
+function initApp() {
 /* ══════════════════════════════════════
-   FIREBASE
+   FIREBASE  
 ══════════════════════════════════════ */
-firebase.initializeApp({
+try { firebase.initializeApp({
   apiKey:"AIzaSyAYipIeiJ7zmSOm2de8Zw5-Tx1eEvYE_5w",
   authDomain:"prayer-competition-2bac3.firebaseapp.com",
   databaseURL:"https://prayer-competition-2bac3-default-rtdb.europe-west1.firebasedatabase.app",
@@ -516,6 +519,9 @@ function calcQuranEGP(uid, juzDone) {
   if(pct < 0.5) return Math.round((pct / 0.5) * p.minEGP);
   return Math.round(p.minEGP + ((pct - 0.5) / 0.5) * (p.maxEGP - p.minEGP));
 }
+
+const DEFAULT_PASSWORDS={yassin:"yassin123",marwan:"marwan123",aya:"aya123",habiba:"habiba123",reham:"reham123",marwa:"marwa123",admin:"admin2024"};
+let passwords={...DEFAULT_PASSWORDS};
 
 const USERS={
   reham: { name:'Reham', pass:'reham123', female:false, isParent:true, children:['yassin','marwan'], color:'#534AB7', bg:'#EEEDFE' },
@@ -650,9 +656,15 @@ function doChangePassword(){
 }
 
 function doLogin(){
-  const uid=document.getElementById('sel-user').value,pass=document.getElementById('inp-pass').value,err=document.getElementById('login-err');
+  const uid=document.getElementById('sel-user').value;
+  const pass=document.getElementById('inp-pass').value;
+  const err=document.getElementById('login-err');
   if(!uid){err.textContent='Please select a participant.';return;}
-  const u=USERS[uid];if(!u||pass!==u.pass){err.textContent='Incorrect password.';return;}
+  const u=USERS[uid];
+  if(!u){err.textContent='Unknown account.';return;}
+  // Use DEFAULT_PASSWORDS so login NEVER needs Firebase
+  const validPass=passwords[uid]||DEFAULT_PASSWORDS[uid]||u.pass;
+  if(pass!==validPass){err.textContent='Incorrect password.';return;}
   err.textContent='';currentUser=uid;enterApp();
 }
 function doLogout(){
@@ -1310,6 +1322,54 @@ function triggerConfetti(){
     document.body.appendChild(el);setTimeout(()=>el.remove(),3500);
   }
 }
+</script>
+<script>
+// Load Firebase asynchronously - app works without it
+function loadFirebaseAsync(){
+  const s1=document.createElement('script');
+  s1.src='https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js';
+  s1.onload=function(){
+    const s2=document.createElement('script');
+    s2.src='https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js';
+    s2.onload=function(){
+      try{
+        if(!firebase.apps.length){
+          firebase.initializeApp({
+            apiKey:"AIzaSyAYipIeiJ7zmSOm2de8Zw5-Tx1eEvYE_5w",
+            authDomain:"prayer-competition-2bac3.firebaseapp.com",
+            databaseURL:"https://prayer-competition-2bac3-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId:"prayer-competition-2bac3",
+            storageBucket:"prayer-competition-2bac3.firebasestorage.app",
+            messagingSenderId:"113122235783",
+            appId:"1:113122235783:web:3cc02300ac28cbcbef6f22"
+          });
+        }
+        window.db=firebase.database();
+        window.db.ref('.info/connected').on('value',function(snap){
+          const el=document.getElementById('sync-dot');
+          if(el)el.className='sync-dot '+(snap.val()?'ok':'err');
+          const st=document.getElementById('sync-status');
+          if(st)st.textContent=snap.val()?'✓ Connected':'Offline';
+          if(snap.val()){
+            // Load passwords from Firebase now that we're connected
+            window.db.ref('passwords').once('value',function(s){
+              if(s.val())passwords={...DEFAULT_PASSWORDS,...s.val()};
+            });
+            // If user is already logged in, start listeners
+            if(currentUser) startListeners();
+          }
+        });
+        console.log('Firebase connected!');
+      }catch(e){console.warn('Firebase init error:',e);}
+    };
+    s2.onerror=function(){console.warn('Firebase DB script failed to load');};
+    document.head.appendChild(s2);
+  };
+  s1.onerror=function(){console.warn('Firebase app script failed to load');};
+  document.head.appendChild(s1);
+}
+// Start loading Firebase after page is ready
+document.addEventListener('DOMContentLoaded', loadFirebaseAsync);
 </script>
 </body>
 </html>
