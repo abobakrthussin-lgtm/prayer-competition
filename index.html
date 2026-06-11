@@ -442,6 +442,7 @@ const GOLD_MS   = 15*60*1000;
 const SILVER_MS = 30*60*1000;
 const BRONZE_MS = 45*60*1000;
 const COMP_START= '2026-06-13';
+const TRIAL_START='2026-06-12'; // practice day — fully works, counts nothing
 const COMP_END  = '2026-09-01';
 const COMP_DAYS = 81;
 
@@ -570,6 +571,7 @@ function fmtLabel(k){const tk=todayKey();if(k===tk)return'Today';if(k===addDays(
 function fmt12(dt){if(!dt)return'--:--';const h=(dt.getUTCHours()+3)%24,m=dt.getUTCMinutes(),ampm=h>=12?'PM':'AM',hh=h%12||12;return`${hh}:${String(m).padStart(2,'0')} ${ampm}`;}
 function fmtMs(ms){const s=Math.ceil(ms/1000),m=Math.floor(s/60),sec=s%60;return`${m}:${String(sec).padStart(2,'0')}`;}
 function inComp(k){return k>=COMP_START&&k<=COMP_END;}
+function inTrial(k){return k>=TRIAL_START&&k<COMP_START;}
 function getWeekDays(c){const d=[];for(let i=-3;i<=3;i++)d.push(addDays(c,i));return d;}
 function getAllCompDays(){const d=[];let k=COMP_START,tk=todayKey();while(k<=COMP_END&&k<=tk){d.push(k);k=addDays(k,1);}return d;}
 
@@ -608,7 +610,7 @@ function getPrayerMedal(uid,dk,prayer){
    CELL STATE
 ══════════════════════════════════════ */
 function cellState(uid,dk,prayer){
-  const entry=getEntry(uid,dk);if(entry.exempt)return'exempt';if(!inComp(dk))return'out';
+  const entry=getEntry(uid,dk);if(entry.exempt)return'exempt';if(!inComp(dk)&&!inTrial(dk))return'out';
   const tk=todayKey(),az=(timesCache[dk]||{})[prayer],ps=entry.prayers[prayer]||{},chk=ps.checked||false,now=Date.now();
   if(dk>tk)return'future';if(dk<tk)return chk?'locked-done':'locked-missed';
   if(!az)return chk?'locked-done':'future';
@@ -664,7 +666,7 @@ async function enterApp(){
   const u=USERS[currentUser];
   const av=document.getElementById('av');av.textContent=u.name[0];av.style.background=u.bg;av.style.color=u.color;
   document.getElementById('av-name').textContent=u.name;
-  document.getElementById('av-sub').textContent=u.isAdmin?'Administrator':u.isParent?('Children: '+(u.children||[]).map(k=>USERS[k]?.name||k).join(' & ')):'🥇<15min · 🥈<30min · 🥉<45min';
+  document.getElementById('av-sub').textContent=u.isAdmin?'Administrator':u.isParent?('Children: '+(u.children||[]).map(k=>USERS[k]?.name||k).join(' & ')):'🥇15min=3EGP · 🥈30min=2 · 🥉45min=1';
   // Build nav based on role
   const allTabs=['tracker','quran','rewards','stats','board','admin','behavior'];
   allTabs.forEach(id=>{
@@ -686,7 +688,7 @@ async function enterApp(){
   }
   document.getElementById('s-login').classList.remove('active');document.getElementById('s-main').classList.add('active');
   updateCompBanner();
-  const tk=todayKey();currentDayKey=tk>=COMP_START&&tk<=COMP_END?tk:(tk<COMP_START?COMP_START:COMP_END);
+  const tk=todayKey();currentDayKey=(tk>=COMP_START&&tk<=COMP_END)||inTrial(tk)?tk:(tk<TRIAL_START?COMP_START:COMP_END);
   fbListen();fbListenQuran();loadBehavData();
   await fetchPrayerTimes(todayKey());updateNextPrayer();
   // Click first visible tab
@@ -716,7 +718,8 @@ function updateNextPrayer(){
 function updateCompBanner(){
   const tk=todayKey(),total=daysBetween(COMP_START,COMP_END)+1;
   const tEl=document.getElementById('cb-title'),sEl=document.getElementById('cb-sub'),fEl=document.getElementById('cb-fill');if(!tEl)return;
-  if(tk<COMP_START){const d=daysBetween(tk,COMP_START);tEl.textContent=`Starts in ${d} days`;sEl.textContent='June 13 – September 1, 2026';fEl.style.width='0%';}
+  if(inTrial(tk)){tEl.textContent='🧪 Trial Day — practice mode';sEl.textContent='Real competition starts tomorrow, June 13!';fEl.style.width='0%';}
+  else if(tk<COMP_START){const d=daysBetween(tk,COMP_START);tEl.textContent=`Starts in ${d} days`;sEl.textContent='June 13 – September 1, 2026';fEl.style.width='0%';}
   else if(tk>COMP_END){tEl.textContent='Competition ended';sEl.textContent='Final results';fEl.style.width='100%';}
   else{const el2=daysBetween(COMP_START,tk)+1,pct=Math.round((el2/total)*100);tEl.textContent=`Day ${el2} of ${total}`;sEl.textContent=`June 13 – Sep 1 · ${total-el2} days left`;fEl.style.width=pct+'%';}
 }
@@ -746,7 +749,7 @@ function showTab(t,btn){
 function buildTracker(){
   const uid=currentUser,u=USERS[uid],dk=currentDayKey,tk=todayKey();
   const container=document.getElementById('tab-tracker');
-  if(!inComp(dk)){
+  if(!inComp(dk)&&!inTrial(dk)){
     let html=buildWeekStrip();
     if(dk<COMP_START){const d=daysBetween(tk,COMP_START);html+=`<div class="out-banner"><div class="ob-ico">⏳</div><h3>Competition starts in</h3><div class="countdown-big">${d} days</div><p>Kicks off <strong>June 13, 2026</strong></p></div>`;}
     else html+=`<div class="out-banner"><div class="ob-ico">🏆</div><h3>Competition ended!</h3><p>Check the Leaderboard for final results.</p></div>`;
@@ -756,9 +759,12 @@ function buildTracker(){
   const entry=getEntry(uid,dk),times=timesCache[dk]||{},isFut=dk>tk;
   const donePrayers=PRAYERS.filter(p=>(entry.prayers[p]||{}).checked).length;
   let achievHtml='';
+  if(inTrial(dk)){
+    achievHtml+=`<div class="achievement-banner partial" style="background:var(--purple-l);border-color:#AFA9EC"><div class="ab-icon">🧪</div><div class="ab-text"><div class="ab-title">Trial Day — practice only!</div><div class="ab-sub">Try everything: check prayers, watch the timers. Nothing counts — the real competition starts tomorrow, June 13.</div></div></div>`;
+  }
   if(!isFut&&!entry.exempt){
-    if(donePrayers===5){achievHtml=`<div class="achievement-banner perfect"><div class="ab-icon">⭐</div><div class="ab-text"><div class="ab-title">Perfect Day! +${EGP_PER_PRAYER*5} EGP earned</div><div class="ab-sub">All 5 prayers — you're on fire 🔥</div></div></div>`;triggerConfetti();}
-    else if(donePrayers>=3)achievHtml=`<div class="achievement-banner good"><div class="ab-icon">✅</div><div class="ab-text"><div class="ab-title">${donePrayers}/5 prayers done</div><div class="ab-sub">${5-donePrayers} more to earn the full +${EGP_PER_PRAYER*5} EGP today</div></div></div>`;
+    if(donePrayers===5){achievHtml=`<div class="achievement-banner perfect"><div class="ab-icon">⭐</div><div class="ab-text"><div class="ab-title">Perfect Day! All 5 prayers ⭐ earned</div><div class="ab-sub">All 5 prayers — you're on fire 🔥</div></div></div>`;triggerConfetti();}
+    else if(donePrayers>=3)achievHtml=`<div class="achievement-banner good"><div class="ab-icon">✅</div><div class="ab-text"><div class="ab-title">${donePrayers}/5 prayers done</div><div class="ab-sub">${5-donePrayers} more for a perfect day ⭐</div></div></div>`;
     else if(donePrayers>0)achievHtml=`<div class="achievement-banner partial"><div class="ab-icon">🌙</div><div class="ab-text"><div class="ab-title">${donePrayers}/5 prayers done</div><div class="ab-sub">You started — keep going!</div></div></div>`;
   }
   let exemptHtml='';
@@ -780,7 +786,7 @@ function buildTracker(){
     const medalHtml=medal?`<div class="medal-badge" title="${medal.label}">${medal.icon}</div>`:'';
     cells+=`<div class="${cellClass}" id="pcell-${dk}-${p}" ${clickable?`onclick="togglePrayer('${uid}','${dk}','${p}')"`:''}>${medalHtml}<input type="checkbox" ${checked?'checked':''} ${!clickable?'disabled':''}/><span class="pname">${p}</span><span class="pazan">${azanLbl}</span>${badgeHtml}</div>`;
   });
-  const legendHtml=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:.75rem;font-size:11px;color:var(--mu)"><span>🥇 &lt;15min</span><span>🥈 &lt;30min</span><span>🥉 &lt;45min</span><span style="color:var(--gold);font-weight:600">+${EGP_PER_PRAYER} EGP per prayer ✓</span></div>`;
+  const legendHtml=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:.75rem;font-size:11px;color:var(--mu)"><span>🥇&lt;15min = 3 EGP</span><span>🥈&lt;30min = 2 EGP</span><span>🥉&lt;45min = 1 EGP</span></div>`;
   const saveBtn=!isFut?`<button class="save-btn" onclick="saveDay('${uid}','${dk}')">💾 Save to cloud</button>`:'';
   container.innerHTML=buildWeekStrip()+buildDayNav()+achievHtml+`<div class="day-card"><div class="day-hdr"><span class="day-lbl">${fmtLabel(dk)}</span><span class="day-dt">${fmtShort(dk)}</span></div>${exemptHtml}${legendHtml}<div class="pgrid">${cells}</div>${saveBtn}</div>`;
 }
@@ -791,7 +797,7 @@ function buildWeekStrip(){
   days.forEach(dk=>{
     if(dk>COMP_END)return;
     let dotClass='';
-    if(inComp(dk)&&dk<=tk){const entry=getEntry(uid,dk);if(entry.exempt)dotClass='dot-exempt';else{const done=PRAYERS.filter(p=>(entry.prayers[p]||{}).checked).length;dotClass=done===5?'dot-full':done>0?'dot-part':dk<tk?'dot-miss':'';}}
+    if((inComp(dk)||inTrial(dk))&&dk<=tk){const entry=getEntry(uid,dk);if(entry.exempt)dotClass='dot-exempt';else{const done=PRAYERS.filter(p=>(entry.prayers[p]||{}).checked).length;dotClass=done===5?'dot-full':done>0?'dot-part':dk<tk?'dot-miss':'';}}
     const isSel=dk===currentDayKey,isTod=dk===tk,isFut=dk>tk;
     html+=`<div class="wday ${isSel?'sel':''} ${isTod&&!isSel?'tod':''} ${isFut?'fut':''} ${dotClass}" onclick="jumpToDay('${dk}')"><span class="wd-n">${fmtDayName(dk)}</span><span class="wd-d">${fmtDayNum(dk)}</span><div class="wd-dot"></div></div>`;
   });
@@ -799,10 +805,10 @@ function buildWeekStrip(){
 }
 function buildDayNav(){
   const prev=addDays(currentDayKey,-1),next=addDays(currentDayKey,1),tk=todayKey();
-  const canPrev=inComp(prev),canNext=inComp(next)&&next<=tk;
+  const canPrev=inComp(prev)||inTrial(prev),canNext=(inComp(next)||inTrial(next))&&next<=tk;
   return`<div class="day-nav"><button class="nav-arrow" onclick="jumpToDay('${prev}')" ${!canPrev?'disabled':''}>← Prev</button><div class="dn-center"><div class="dn-label">${fmtLabel(currentDayKey)}</div><div class="dn-date">${fmtShort(currentDayKey)}</div></div><button class="nav-arrow" onclick="jumpToDay('${next}')" ${!canNext?'disabled':''}>Next →</button></div>`;
 }
-function jumpToDay(dk){if(dk<COMP_START||dk>COMP_END||dk>todayKey())return;currentDayKey=dk;fetchPrayerTimes(dk).then(()=>buildTracker());buildTracker();}
+function jumpToDay(dk){if(dk<TRIAL_START||dk>COMP_END||dk>todayKey())return;currentDayKey=dk;fetchPrayerTimes(dk).then(()=>buildTracker());buildTracker();}
 function refreshBadges(){
   const uid=currentUser,dk=currentDayKey;let needRebuild=false;
   PRAYERS.forEach(p=>{
@@ -815,7 +821,20 @@ function refreshBadges(){
 function togglePrayer(uid,dk,prayer){
   const state=cellState(uid,dk,prayer);if(state!=='open'&&state!=='active')return;
   const entry=getEntry(uid,dk);if(!entry.prayers[prayer])entry.prayers[prayer]={};
-  const ps=entry.prayers[prayer];ps.checked=!ps.checked;ps.checkedAt=ps.checked?Date.now():null;buildTracker();
+  const ps=entry.prayers[prayer];
+  ps.checked=!ps.checked;
+  if(ps.checked){
+    ps.checkedAt=Date.now();
+    // Store EGP based on speed: <15min=3, <30min=2, <45min=1
+    const az=(timesCache[dk]||{})[prayer];
+    if(az){
+      const el=ps.checkedAt-az.getTime();
+      ps.egp = el<=GOLD_MS?3 : el<=SILVER_MS?2 : 1;
+    } else { ps.egp = 1; }
+  } else {
+    ps.checkedAt=null; ps.egp=0;
+  }
+  buildTracker();
 }
 function toggleExempt(dk,val){const entry=getEntry(currentUser,dk);entry.exempt=val;if(val)entry.prayers={};buildTracker();}
 function saveDay(uid,dk){fbSet(uid,dk,getEntry(uid,dk));}
@@ -1128,7 +1147,14 @@ function calcStats(uid){
   days.forEach(dk=>{
     const entry=getEntry(uid,dk);if(entry.exempt){exemptDays++;return;}
     const done=PRAYERS.filter(p=>(entry.prayers[p]||{}).checked).length;
-    totalPossible+=5;totalDone+=done;prayerEGP+=done*EGP_PER_PRAYER;
+    totalPossible+=5;totalDone+=done;
+    PRAYERS.forEach(p=>{
+      const ps=entry.prayers[p]||{};
+      if(ps.checked){
+        if(typeof ps.egp==='number'&&ps.egp>0){prayerEGP+=ps.egp;}
+        else{const m=getPrayerMedal(uid,dk,p);prayerEGP+=(m?m.pts:1);}
+      }
+    });
     if(done===0&&dk<tk)missedDays++;
     PRAYERS.forEach(p=>{
       if((entry.prayers[p]||{}).checked){perPrayer[p]++;const m=getPrayerMedal(uid,dk,p);if(m){medalScore+=m.pts;if(m.pts===3)goldC++;else if(m.pts===2)silverC++;else bronzeC++;}}
@@ -1223,7 +1249,7 @@ function buildLeaderboard(){
   let h=`<div class="sec-ttl">Live standings · June 13 – Sep 1, 2026</div>`;
   h+=results.map((r,i)=>{
     const p=QURAN_PROFILES[r.uid];
-    return`<div class="lb-row"><div class="lb-rank">${ranks[i]}</div><div class="lb-info"><div class="lb-name" style="color:${r.color}">${r.name}</div><div class="lb-detail">${r.totalDone} prayers · 📖 ${r.juzDone} juz · 🏅 ${r.medalScore} pts</div></div>${r.female&&r.exemptDays>0?`<span class="lb-badge">${r.exemptDays}x</span>`:''}<div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px"><div class="lb-pct">${r.pct}%</div><div class="lb-money">${r.totalEGP} EGP</div></div></div>`;
+    return`<div class="lb-row"><div class="lb-rank">${ranks[i]}</div><div class="lb-info"><div class="lb-name" style="color:${r.color}">${r.name}</div><div class="lb-detail">${r.totalDone} prayers · 📖 ${r.juzDone} juz · 🏅 ${r.medalScore} pts</div></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px"><div class="lb-pct">${r.pct}%</div><div class="lb-money">${r.totalEGP} EGP</div></div></div>`;
   }).join('');
   h+=`<div style="padding:10px 14px;background:var(--surface);border:1px solid var(--bd);border-radius:var(--rm);margin-top:.75rem;font-size:11px;color:var(--mu)">💰 ${EGP_PER_PRAYER} EGP per prayer · Quran bonus is a surprise 🎁<br>🏆 Tiebreaker: medal score → total prayers → juz completed</div>`;
   h+=`<div class="export-row"><button class="btn-outline" onclick="exportLeaderboard()">⬇ Export standings</button></div>`;
