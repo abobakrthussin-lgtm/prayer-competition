@@ -441,6 +441,13 @@ const WINDOW_MS = 45*60*1000;
 const GOLD_MS   = 15*60*1000;
 const SILVER_MS = 30*60*1000;
 const BRONZE_MS = 45*60*1000;
+const JUMUA_MS = 90*60*1000; // Friday Dhuhr (Jumua) — boys get 1.5 hours
+function isFriday(dk){return keyToDate(dk).getUTCDay()===5;}
+function windowMsFor(uid,dk,prayer){
+  const u=USERS[uid];
+  if(u&&!u.female&&prayer==='Dhuhr'&&isFriday(dk))return JUMUA_MS;
+  return WINDOW_MS;
+}
 const COMP_START= '2026-06-13';
 const TRIAL_START='2026-06-12'; // practice day — fully works, counts nothing
 const COMP_END  = '2026-09-01';
@@ -600,9 +607,10 @@ function getPrayerMedal(uid,dk,prayer){
   if(!ps.checked||!ps.checkedAt)return null;
   const az=(timesCache[dk]||{})[prayer];if(!az)return null;
   const el=ps.checkedAt-az.getTime();if(el<0)return null;
-  if(el<=GOLD_MS)  return{icon:'🥇',label:'Gold <15min',pts:3};
-  if(el<=SILVER_MS)return{icon:'🥈',label:'Silver <30min',pts:2};
-  if(el<=BRONZE_MS)return{icon:'🥉',label:'Bronze <45min',pts:1};
+  const win=windowMsFor(uid,dk,prayer);
+  if(el<=win/3)  return{icon:'🥇',label:'Gold',pts:3};
+  if(el<=win*2/3)return{icon:'🥈',label:'Silver',pts:2};
+  if(el<=win)    return{icon:'🥉',label:'Bronze',pts:1};
   return null;
 }
 
@@ -614,11 +622,11 @@ function cellState(uid,dk,prayer){
   const tk=todayKey(),az=(timesCache[dk]||{})[prayer],ps=entry.prayers[prayer]||{},chk=ps.checked||false,now=Date.now();
   if(dk>tk)return'future';if(dk<tk)return chk?'locked-done':'locked-missed';
   if(!az)return chk?'locked-done':'future';
-  const azMs=az.getTime(),winEnd=azMs+WINDOW_MS;
+  const azMs=az.getTime(),winEnd=azMs+windowMsFor(uid,dk,prayer);
   if(now<azMs)return'future';if(!chk)return now<=winEnd?'open':'missed';
   return now<=winEnd?'active':'locked-done';
 }
-function msLeft(dk,p){const t=(timesCache[dk]||{})[p];if(!t)return 0;return Math.max(0,t.getTime()+WINDOW_MS-Date.now());}
+function msLeft(dk,p){const t=(timesCache[dk]||{})[p];if(!t)return 0;return Math.max(0,t.getTime()+windowMsFor(currentUser,dk,p)-Date.now());}
 
 /* ══════════════════════════════════════
    AUTH
@@ -673,8 +681,10 @@ async function enterApp(){
     const el=document.getElementById('nt-'+id);if(el)el.style.display='none';
   });
   if(u.isAdmin){
-    // Admin sees all
-    allTabs.forEach(id=>{const el=document.getElementById('nt-'+id);if(el)el.style.display='';});
+    // Admin observes only — no tracker/quran/rewards (those add data)
+    ['admin','behavior','board'].forEach(id=>{const el=document.getElementById('nt-'+id);if(el)el.style.display='';});
+    document.getElementById('cairo-bar-wrap').style.display='none';
+    const at=document.getElementById('nt-admin');if(at)at.textContent='📊 Progress';
   } else if(u.isParent){
     // Parents see only: Behavior + Progress (admin tab renamed)
     ['behavior','admin'].forEach(id=>{const el=document.getElementById('nt-'+id);if(el)el.style.display='';});
@@ -786,8 +796,8 @@ function buildTracker(){
     const medalHtml=medal?`<div class="medal-badge" title="${medal.label}">${medal.icon}</div>`:'';
     cells+=`<div class="${cellClass}" id="pcell-${dk}-${p}" ${clickable?`onclick="togglePrayer('${uid}','${dk}','${p}')"`:''}>${medalHtml}<input type="checkbox" ${checked?'checked':''} ${!clickable?'disabled':''}/><span class="pname">${p}</span><span class="pazan">${azanLbl}</span>${badgeHtml}</div>`;
   });
-  const legendHtml=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:.75rem;font-size:11px;color:var(--mu)"><span>🥇&lt;15min = 3 EGP</span><span>🥈&lt;30min = 2 EGP</span><span>🥉&lt;45min = 1 EGP</span></div>`;
-  const saveBtn=!isFut?`<button class="save-btn" onclick="saveDay('${uid}','${dk}')">💾 Save to cloud</button>`:'';
+  const legendHtml=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:.75rem;font-size:11px;color:var(--mu)">${(!u.female&&isFriday(dk))?'<span style="color:var(--purple);font-weight:600">🕌 Jumua: 90-min window today</span>':'<span>🥇 fast = 3 EGP</span><span>🥈 = 2 EGP</span><span>🥉 = 1 EGP</span>'}</div>`;
+  const saveBtn=!isFut?`<div style="font-size:11px;color:var(--green);text-align:center;padding:6px">✓ Changes save automatically to cloud</div>`:'';
   container.innerHTML=buildWeekStrip()+buildDayNav()+achievHtml+`<div class="day-card"><div class="day-hdr"><span class="day-lbl">${fmtLabel(dk)}</span><span class="day-dt">${fmtShort(dk)}</span></div>${exemptHtml}${legendHtml}<div class="pgrid">${cells}</div>${saveBtn}</div>`;
 }
 
@@ -819,6 +829,9 @@ function refreshBadges(){
   if(needRebuild)buildTracker();
 }
 function togglePrayer(uid,dk,prayer){
+  const cu=USERS[currentUser];
+  if(cu&&(cu.isAdmin||cu.isParent)){showToast('👀 Observers cannot add prayers');return;}
+  if(uid!==currentUser){showToast('You can only mark your own prayers');return;}
   const state=cellState(uid,dk,prayer);if(state!=='open'&&state!=='active')return;
   const entry=getEntry(uid,dk);if(!entry.prayers[prayer])entry.prayers[prayer]={};
   const ps=entry.prayers[prayer];
@@ -829,11 +842,15 @@ function togglePrayer(uid,dk,prayer){
     const az=(timesCache[dk]||{})[prayer];
     if(az){
       const el=ps.checkedAt-az.getTime();
-      ps.egp = el<=GOLD_MS?3 : el<=SILVER_MS?2 : 1;
+      const win=windowMsFor(uid,dk,prayer);
+      // Thresholds scale with window: first third=3, second third=2, last third=1
+      ps.egp = el<=win/3?3 : el<=win*2/3?2 : 1;
     } else { ps.egp = 1; }
   } else {
     ps.checkedAt=null; ps.egp=0;
   }
+  // Auto-save immediately to cloud — no separate Save button needed
+  fbSet(uid,dk,entry);
   buildTracker();
 }
 function toggleExempt(dk,val){const entry=getEntry(currentUser,dk);entry.exempt=val;if(val)entry.prayers={};buildTracker();}
@@ -1267,7 +1284,82 @@ function buildAdminTab(){
   const title = u.isParent ? 'Your Children\'s Progress' : 'All Participants';
   document.getElementById('tab-admin').innerHTML=`<div class="sec-ttl">${title}</div><div class="chip-row">${chips}</div><div id="admin-inner"><p style="font-size:13px;color:var(--mu)">Select a participant above.</p></div>`;
 }
-function adminPick(uid,btn){document.querySelectorAll('.chip').forEach(b=>b.classList.remove('active'));btn.classList.add('active');document.getElementById('admin-inner').innerHTML=`<div id="as-${uid}"></div>`;buildStats(uid,`as-${uid}`);}
+function adminPick(uid,btn){
+  document.querySelectorAll('.chip').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  buildObserveView(uid);
+}
+
+function buildObserveView(uid){
+  const u=USERS[uid];
+  const s=calcStats(uid);
+  const days=getAllCompDays().slice().reverse(); // newest first
+  const medalEmoji={3:'🥇',2:'🥈',1:'🥉'};
+
+  // Summary stats card
+  let html=`<div class="stats-grid">
+    <div class="stat-card"><div class="s-lbl">Prayers done</div><div class="s-val gold">${s.totalDone}</div></div>
+    <div class="stat-card"><div class="s-lbl">Completion</div><div class="s-val green">${s.pct}%</div></div>
+    <div class="stat-card"><div class="s-lbl">Total EGP</div><div class="s-val gold">${s.totalEGP}</div></div>
+    <div class="stat-card"><div class="s-lbl">Juz done</div><div class="s-val green">${s.juzDone}</div></div>
+  </div>`;
+
+  // Prayer timeline — every day, every prayer, WHO prayed WHEN
+  html+=`<div class="sec-ttl">🕌 Prayer Log — when each prayer was marked</div>`;
+  if(days.length===0){
+    html+=`<p style="font-size:13px;color:var(--mu)">No competition days yet.</p>`;
+  } else {
+    days.forEach(dk=>{
+      const entry=getEntry(uid,dk);
+      const times=timesCache[dk]||{};
+      if(entry.exempt){
+        html+=`<div class="day-card" style="padding:.75rem 1rem"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-weight:600;font-size:13px">${fmtLabel(dk)} <span style="color:var(--mu);font-weight:400">${fmtShort(dk)}</span></span><span style="font-size:11px;padding:3px 10px;border-radius:99px;background:var(--teal-l);color:var(--teal)">Exempt day</span></div></div>`;
+        return;
+      }
+      let rows='';
+      PRAYERS.forEach(p=>{
+        const ps=entry.prayers[p]||{};
+        const az=times[p];
+        const azLbl=az?fmt12(az):'--:--';
+        if(ps.checked&&ps.checkedAt){
+          const t=new Date(ps.checkedAt+3*3600*1000); // Cairo time
+          const h=t.getUTCHours(),m=t.getUTCMinutes(),ampm=h>=12?'PM':'AM',hh=h%12||12;
+          const prayedAt=`${hh}:${String(m).padStart(2,'0')} ${ampm}`;
+          const medal=ps.egp?medalEmoji[ps.egp]:(getPrayerMedal(uid,dk,p)?.icon||'');
+          const egp=ps.egp||0;
+          rows+=`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;font-size:12px;border-bottom:1px solid var(--bd)">
+            <span style="width:60px;font-weight:600">${p}</span>
+            <span style="color:var(--mu);width:75px">azan ${azLbl}</span>
+            <span style="flex:1;color:var(--green)">✓ prayed ${prayedAt}</span>
+            <span style="width:40px;text-align:right">${medal} ${egp>0?egp+'£':''}</span>
+          </div>`;
+        } else {
+          const missed=dk<todayKey();
+          rows+=`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;font-size:12px;border-bottom:1px solid var(--bd);opacity:.5">
+            <span style="width:60px;font-weight:600">${p}</span>
+            <span style="color:var(--mu);width:75px">azan ${azLbl}</span>
+            <span style="flex:1;color:${missed?'var(--red)':'var(--mu)'}">${missed?'✗ not prayed':'— upcoming'}</span>
+            <span style="width:40px"></span>
+          </div>`;
+        }
+      });
+      const dayDone=PRAYERS.filter(p=>(entry.prayers[p]||{}).checked).length;
+      const dayCol=dayDone===5?'var(--green)':dayDone>0?'var(--gold)':'var(--red)';
+      html+=`<div class="day-card" style="padding:.75rem 1rem;margin-bottom:.5rem">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem">
+          <span style="font-weight:600;font-size:13px">${fmtLabel(dk)} <span style="color:var(--mu);font-weight:400">${fmtShort(dk)}</span></span>
+          <span style="font-weight:700;color:${dayCol};font-size:13px">${dayDone}/5</span>
+        </div>
+        ${rows}
+      </div>`;
+    });
+  }
+
+  // Fetch any missing prayer times so azan shows
+  days.forEach(dk=>{if(!timesCache[dk])fetchPrayerTimes(dk).then(()=>{const active=document.querySelector('.chip.active');if(active&&active.textContent===USERS[uid].name)buildObserveView(uid);});});
+
+  document.getElementById('admin-inner').innerHTML=html;
+}
 
 /* ══════════════════════════════════════
    EXPORT
