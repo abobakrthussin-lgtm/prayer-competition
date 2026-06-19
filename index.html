@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<!-- v4.2 quran-hidden -->
 <title>Prayer Competition – Cairo 2026</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -870,7 +871,7 @@ function buildQuran(){
   const juzDone=Object.values(qdata.juz||{}).filter(v=>v===true).length;
   const todayAyat=qdata.today||0;
   const pct=Math.min(100,Math.round((juzDone/30)*100));
-  const egp=calcQuranEGP(uid,juzDone);
+  // quran money hidden from children
 
   // Circular progress values
   const R=54,C=2*Math.PI*R,offset=C-(pct/100)*C;
@@ -1010,7 +1011,7 @@ function getBehavEGP(uid){
 /* ── BUILD BEHAVIOR TAB ── */
 function buildBehavior(){
   const u=USERS[currentUser];
-  if(u.isParent){ buildParentBehavior(); return; }
+  if(u.isParent||u.isAdmin){ buildParentBehavior(); return; }
   // Participant: read-only view of their own scores
   buildChildBehaviorView(currentUser);
 }
@@ -1019,7 +1020,10 @@ let _selChild = null;
 
 function buildParentBehavior(){
   const u=USERS[currentUser];
-  const children=u.children||[];
+  // Admin watches all children; parents watch only their assigned children
+  const children = u.isAdmin
+    ? Object.keys(USERS).filter(k=>!USERS[k].isParent&&!USERS[k].isAdmin)
+    : (u.children||[]);
   if(!_selChild||!children.includes(_selChild)) _selChild=children[0];
   renderBehaviorFor(_selChild, children);
 }
@@ -1185,7 +1189,7 @@ function calcStats(uid){
   const activeDays=days.length-exemptDays;
   const pct=totalPossible>0?Math.round((totalDone/totalPossible)*100):0;
   const perfectDays=days.filter(dk=>{const e=getEntry(uid,dk);return!e.exempt&&PRAYERS.filter(p=>(e.prayers[p]||{}).checked).length===5;}).length;
-  return{totalDone,totalPossible,pct,perPrayer,exemptDays,missedDays,activeDays,totalDays:days.length,prayerEGP,quranEGP,totalEGP,medalScore,goldC,silverC,bronzeC,perfectDays,juzDone};
+  return{totalDone,totalPossible,pct,perPrayer,exemptDays,missedDays,activeDays,totalDays:days.length,prayerEGP,quranEGP,totalEGP,visibleEGP:prayerEGP+behavEGP,medalScore,goldC,silverC,bronzeC,perfectDays,juzDone};
 }
 
 function buildRewards(){
@@ -1193,15 +1197,15 @@ function buildRewards(){
   const s=calcStats(uid);
   const profile=QURAN_PROFILES[uid];
   const maxPossible=COMP_DAYS*5*EGP_PER_PRAYER+(profile?profile.maxEGP:0);
-  const pct=maxPossible>0?Math.min(100,Math.round((s.totalEGP/maxPossible)*100)):0;
+  const pct=maxPossible>0?Math.min(100,Math.round((s.visibleEGP/maxPossible)*100)):0;
   const days=getAllCompDays();
   const starDisplay=days.map(dk=>{const e=getEntry(uid,dk);if(e.exempt)return'<span class="star-day" title="Exempt">⚪</span>';const done=PRAYERS.filter(p=>(e.prayers[p]||{}).checked).length;if(done===5)return'<span class="star-day" title="Perfect!">⭐</span>';if(done>0)return`<span class="star-day" title="${done}/5">🔸</span>`;if(dk<todayKey())return'<span class="star-day" title="Missed">⬜</span>';return'<span class="star-day">▫️</span>';}).join('');
 
   document.getElementById('tab-rewards').innerHTML=`
   <div class="money-hero">
-    <div class="money-hero-lbl">💰 Total EGP Earned</div>
-    <div><span class="money-hero-amount">${s.totalEGP}</span><span class="money-hero-unit">EGP</span></div>
-    <div class="money-hero-sub">${s.prayerEGP} prayers + ${s.quranEGP} Quran + ${s.behavEGP} behavior</div>
+    <div class="money-hero-lbl">💰 EGP Earned So Far</div>
+    <div><span class="money-hero-amount">${s.visibleEGP}</span><span class="money-hero-unit">EGP</span></div>
+    <div class="money-hero-sub">${s.prayerEGP} from prayers + ${s.behavEGP} from behavior</div>
     <div class="money-progress-bar"><div class="money-progress-fill" style="width:${pct}%"></div></div>
     <div class="money-minmax"><span>Keep praying & reading 🤲</span><span>Max is a surprise 🎁</span></div>
   </div>
@@ -1244,8 +1248,9 @@ function buildStats(uid,cid){
     <div class="stat-card"><div class="s-lbl">Prayers done</div><div class="s-val gold">${s.totalDone}</div></div>
     <div class="stat-card"><div class="s-lbl">Completion</div><div class="s-val green">${s.pct}%</div></div>
     <div class="stat-card"><div class="s-lbl">Prayer EGP</div><div class="s-val gold">${s.prayerEGP}</div></div>
-    <div class="stat-card"><div class="s-lbl">Quran EGP</div><div class="s-val purple">${s.quranEGP}</div></div>
-    <div class="stat-card"><div class="s-lbl">Total EGP</div><div class="s-val gold">${s.totalEGP}</div></div>
+    ${(USERS[currentUser].isAdmin||USERS[currentUser].isParent)?`<div class="stat-card"><div class="s-lbl">Quran EGP</div><div class="s-val purple">${s.quranEGP}</div></div>`:''}
+    
+    <div class="stat-card"><div class="s-lbl">${(USERS[currentUser].isAdmin||USERS[currentUser].isParent)?'Total EGP':'EGP Earned'}</div><div class="s-val gold">${(USERS[currentUser].isAdmin||USERS[currentUser].isParent)?s.totalEGP:s.visibleEGP}</div></div>
     <div class="stat-card"><div class="s-lbl">Juz done</div><div class="s-val green">${s.juzDone}</div></div>
     <div class="stat-card"><div class="s-lbl">Perfect days</div><div class="s-val green">${s.perfectDays}</div></div>
     <div class="stat-card"><div class="s-lbl">Medal score</div><div class="s-val purple">${s.medalScore}</div></div>
@@ -1266,7 +1271,7 @@ function buildLeaderboard(){
   let h=`<div class="sec-ttl">Live standings · June 13 – Sep 1, 2026</div>`;
   h+=results.map((r,i)=>{
     const p=QURAN_PROFILES[r.uid];
-    return`<div class="lb-row"><div class="lb-rank">${ranks[i]}</div><div class="lb-info"><div class="lb-name" style="color:${r.color}">${r.name}</div><div class="lb-detail">${r.totalDone} prayers · 📖 ${r.juzDone} juz · 🏅 ${r.medalScore} pts</div></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px"><div class="lb-pct">${r.pct}%</div><div class="lb-money">${r.totalEGP} EGP</div></div></div>`;
+    return`<div class="lb-row"><div class="lb-rank">${ranks[i]}</div><div class="lb-info"><div class="lb-name" style="color:${r.color}">${r.name}</div><div class="lb-detail">${r.totalDone} prayers · 📖 ${r.juzDone} juz · 🏅 ${r.medalScore} pts</div></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px"><div class="lb-pct">${r.pct}%</div><div class="lb-money">${r.visibleEGP} EGP</div></div></div>`;
   }).join('');
   h+=`<div style="padding:10px 14px;background:var(--surface);border:1px solid var(--bd);border-radius:var(--rm);margin-top:.75rem;font-size:11px;color:var(--mu)">💰 ${EGP_PER_PRAYER} EGP per prayer · Quran bonus is a surprise 🎁<br>🏆 Tiebreaker: medal score → total prayers → juz completed</div>`;
   h+=`<div class="export-row"><button class="btn-outline" onclick="exportLeaderboard()">⬇ Export standings</button></div>`;
